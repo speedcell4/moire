@@ -1,9 +1,10 @@
 import dynet as dy
 
 from moire import nn, Expression, ParameterCollection
+from moire.nn.utils import compute_hidden_size
 
 __all__ = [
-    'Linear', 'BiLinear',
+    'Linear', 'MLP', 'BiLinear',
 ]
 
 
@@ -29,6 +30,41 @@ class Linear(nn.Module):
             b = self.b.expr(self.training)
             return dy.affine_transform([b, W, x])
         return W * x
+
+
+class MLP(nn.Module):
+    def __init__(self, pc: ParameterCollection, num_layers: int,
+                 in_features: int, out_features: int, hidden_features: int = None, bias: bool = True) -> None:
+        super(MLP, self).__init__(pc)
+
+        if hidden_features is None:
+            hidden_features = compute_hidden_size(in_features, out_features)
+
+        self.num_layers = num_layers
+        self.in_features = in_features
+        self.out_features = out_features
+        self.hidden_features = hidden_features
+        self.bias = bias
+
+        self.nonlinear = dy.tanh
+
+        if num_layers == 1:
+            self.layer0 = Linear(self.pc, in_features, out_features)
+        else:
+            self.layer0 = Linear(self.pc, in_features, hidden_features)
+            for ix in range(1, num_layers - 1):
+                setattr(self, f'layer{ix}', Linear(self.pc, hidden_features, hidden_features))
+            setattr(self, f'layer{num_layers - 1}', Linear(self.pc, hidden_features, out_features))
+
+    def __repr__(self):
+        return f'{self.__class__.__name__} ({self.num_layers} @ {self.in_features} -> ' \
+               f'{self.hidden_features} -> {self.out_features})'
+
+    # TODO nonlinear activations
+    def __call__(self, x: Expression) -> Expression:
+        for ix in range(self.num_layers - 1):
+            x = self.nonlinear(getattr(self, f'layer{ix}')(x))
+        return getattr(self, f'layer{self.num_layers - 1}')(x)
 
 
 class BiLinear(nn.Module):
@@ -58,12 +94,12 @@ class BiLinear(nn.Module):
 
 
 if __name__ == '__main__':
-    fc = BiLinear(ParameterCollection(), 3, 4, 5)
+    fc = MLP(ParameterCollection(), 3, 4, 5)
     dy.renew_cg(True, True)
 
-    x1 = dy.inputVector([1, 2, 3])
+    # x1 = dy.inputVector([1, 2, 3])
     x2 = dy.inputVector([1, 2, 3, 4])
-    y = fc(x1, x2)
+    y = fc(x2)
 
     print(y.dim())
     print(y.value())
