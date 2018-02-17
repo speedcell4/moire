@@ -19,6 +19,8 @@ class Function(object):
         raise NotImplementedError
 
 
+# TODO save / load
+# TODO Builders
 class Module(object):
     def __init__(self, pc: ParameterCollection):
         self.pc: Model = pc.add_subcollection()
@@ -60,13 +62,13 @@ class Module(object):
     @property
     def parameters(self):
         yield from self._parameters.values()
-        for module in self._modules.values():
+        for module in self.modules:
             yield from module.parameters
 
     @property
     def lookup_parameters(self):
         yield from self._lookup_parameters.values()
-        for module in self._modules.values():
+        for module in self.modules:
             yield from module.lookup_parameters
 
     def copy_from(self, other: 'Module') -> None:

@@ -1,6 +1,6 @@
 import dynet as dy
 
-from moire import nn, Expression, ParameterCollection
+from moire import nn, Expression, ParameterCollection, Activation
 from moire.nn.utils import compute_hidden_size
 
 __all__ = [
@@ -34,7 +34,8 @@ class Linear(nn.Module):
 
 class MLP(nn.Module):
     def __init__(self, pc: ParameterCollection, num_layers: int,
-                 in_features: int, out_features: int, hidden_features: int = None, bias: bool = True) -> None:
+                 in_features: int, out_features: int, hidden_features: int = None,
+                 bias: bool = True, nonlinear: Activation = dy.tanh) -> None:
         super(MLP, self).__init__(pc)
 
         if hidden_features is None:
@@ -45,8 +46,7 @@ class MLP(nn.Module):
         self.out_features = out_features
         self.hidden_features = hidden_features
         self.bias = bias
-
-        self.nonlinear = dy.tanh
+        self.nonlinear = nonlinear
 
         if num_layers == 1:
             self.layer0 = Linear(self.pc, in_features, out_features)
