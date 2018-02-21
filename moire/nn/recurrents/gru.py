@@ -61,3 +61,7 @@ class GRUCell(nn.Module):
         ht = dy.cmult(1.0 - z, n) + dy.cmult(z, htm1)
 
         return ht
+
+
+class GRU(nn.Module):
+    pass

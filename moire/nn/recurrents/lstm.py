@@ -4,6 +4,7 @@ from typing import Tuple, List
 import dynet as dy
 
 from moire import nn, Expression, ParameterCollection
+from moire.nn.recurrents.utils import scan
 
 __all__ = [
     'LSTMState', 'LSTMCell', 'LSTM', 'BiLSTM',
@@ -141,19 +142,12 @@ class LSTM(nn.Module):
                   htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> List[Expression]:
         assert len(xs) > 0
 
-        fs = []
-        for x in xs:
-            htm1s, ctm1s = self.__call__(x, htm1s, ctm1s)
-            fs.append(htm1s[-1])
-        return fs
+        hs, _ = zip(*scan(self.__call__, xs, htm1s, ctm1s))
+        return hs
 
     def compress(self, xs: List[Expression],
                  htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> Expression:
-        assert len(xs) > 0
-
-        for x in xs:
-            htm1s, ctm1s = self.__call__(x, htm1s, ctm1s)
-        return htm1s[-1]
+        return self.transduce(xs, htm1s, ctm1s)[-1]
 
 
 class BiLSTM(nn.Module):
