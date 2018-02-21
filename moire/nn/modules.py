@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from dynet import Model
+import dynet as dy
 
 from moire import ParameterCollection, Parameters, LookupParameters
 
@@ -23,7 +23,7 @@ class Function(object):
 # TODO save / load, pickle, copy, deepcopy
 class Module(object):
     def __init__(self, pc: ParameterCollection):
-        self.pc: Model = pc.add_subcollection()
+        self.pc: dy.Model = pc.add_subcollection()
 
         self._training = False
 
