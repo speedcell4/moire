@@ -27,12 +27,13 @@ class MaskedLogSoftmax(nn.Module):
         return MaskedLogSoftmax(pc, mask, full_value)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} :: {self.restrict}>'
+        return f'<{self.__class__.__name__} :: {self.mask}>'
 
     def __call__(self, x: Expression) -> Expression:
         mask = self.mask.expr(False)
         full = self.mask.expr(False)
         zero = self.mask.expr(False)
 
-        z = dy.sum_elems(where(mask, dy.exp(x - dy.max_dim(x)), zero))
-        return where(mask, x - dy.log(z), full)
+        y = dy.cmult(mask, x)
+        exp_x = where(mask, dy.exp(y - dy.max_dim(y)), zero)
+        return where(mask, x - dy.log(dy.sum_elems(exp_x)), full)
