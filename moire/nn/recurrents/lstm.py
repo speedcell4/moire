@@ -139,6 +139,8 @@ class LSTM(nn.Module):
 
     def transduce(self, xs: List[Expression],
                   htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> List[Expression]:
+        assert len(xs) > 0
+
         fs = []
         for x in xs:
             ht, _ = self.__call__(x, htm1s, ctm1s)
@@ -147,6 +149,8 @@ class LSTM(nn.Module):
 
     def compress(self, xs: List[Expression],
                  htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> Expression:
+        assert len(xs) > 0
+
         for x in xs:
             ht, _ = self.__call__(x, htm1s, ctm1s)
         return ht[-1]
@@ -175,5 +179,5 @@ class BiLSTM(nn.Module):
                  fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                  bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> Expression:
         f = self.f.compress(xs, fhtm1s, fctm1s)
-        b = self.b.compress(xs, bhtm1s, bctm1s)
+        b = self.b.compress(xs[::-1], bhtm1s, bctm1s)
         return dy.concatenate([f, b])

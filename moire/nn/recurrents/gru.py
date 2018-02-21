@@ -2,6 +2,10 @@ import dynet as dy
 
 from moire import nn, ParameterCollection, Expression
 
+__all__ = [
+    'GRUCell',
+]
+
 
 class GRUCell(nn.Module):
     def __init__(self, pc: ParameterCollection, input_size: int, hidden_size: int,
