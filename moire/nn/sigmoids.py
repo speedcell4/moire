@@ -6,7 +6,7 @@ import numpy as np
 from moire import ParameterCollection, nn, Expression, where
 
 __all__ = [
-    'MaskedLogSoftmax',
+    'MaskedLogSoftmax', 'RestrictedLogSoftmax',
 ]
 
 
@@ -19,13 +19,6 @@ class MaskedLogSoftmax(nn.Module):
         self.full = self.pc.add_parameters(dim, init=dy.ConstInitializer(full_value))
         self.zero = self.pc.add_parameters(dim, init=dy.ConstInitializer(0.0))
 
-    @classmethod
-    def from_restrict(cls, pc: ParameterCollection, n: int, restricts: List[int], full_value: float = 0.0):
-        mask = [0] * n
-        for i in restricts:
-            mask[i] = 1
-        return MaskedLogSoftmax(pc, mask, full_value)
-
     def __repr__(self):
         return f'<{self.__class__.__name__} :: {self.mask}>'
 
@@ -37,3 +30,15 @@ class MaskedLogSoftmax(nn.Module):
         y = dy.cmult(mask, x)
         exp_x = where(mask, dy.exp(y - dy.max_dim(y)), zero)
         return where(mask, x - dy.log(dy.sum_elems(exp_x)), full)
+
+
+class RestrictedLogSoftmax(MaskedLogSoftmax):
+    def __init__(self, pc: ParameterCollection, n: int, restricts: List[int], full_value: float = 0.0):
+        mask = [0] * n
+        for i in restricts:
+            mask[i] = 1
+        self.restricts = restricts
+        super(RestrictedLogSoftmax, self).__init__(pc, mask, full_value)
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__} :: {self.restricts}>'
