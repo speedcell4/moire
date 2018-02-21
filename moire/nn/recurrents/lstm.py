@@ -1,8 +1,13 @@
-from typing import Tuple
+import itertools
+from typing import Tuple, List
 
 import dynet as dy
 
 from moire import nn, Expression, ParameterCollection
+
+__all__ = [
+    'LSTMState', 'LSTMCell', 'LSTM', 'BiLSTM',
+]
 
 
 class LSTMCell(nn.Module):
@@ -77,3 +82,98 @@ class LSTMCell(nn.Module):
         ht = self.zoneout(ht, htm1)
 
         return ht, ct
+
+
+class LSTMState(object):
+    def __init__(self, hts: List[Expression], cts: List[Expression], apply):
+        self.hts = hts
+        self.cts = cts
+        self.apply = apply
+
+    def add_input(self, x: Expression) -> 'LSTMState':
+        hts, cts = self.apply(x, self.hts, self.cts)
+        return LSTMState(hts, cts, self.apply)
+
+    def output(self):
+        return self.hts[-1]
+
+
+class LSTM(nn.Module):
+    def __init__(self, pc: ParameterCollection, num_layers: int,
+                 input_size: int, hidden_size: int,
+                 dropout: float = 0.05, zoneout: float = 0.05,
+                 activation=dy.tanh, recurrent_activation=dy.logistic):
+        super(LSTM, self).__init__(pc)
+
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+
+        _commons = dict(
+            dropout=dropout, zoneout=zoneout,
+            activation=activation, recurrent_activation=recurrent_activation,
+        )
+
+        self.rnn0 = LSTMCell(self.pc, input_size, hidden_size, **_commons)
+        for ix in range(1, num_layers):
+            setattr(self, f'rnn{ix}', LSTMCell(self.pc, hidden_size, hidden_size, **_commons))
+
+    def init_state(self) -> 'LSTMState':
+        hts = [getattr(self, f'rnn{ix}').h0.expr(self.training) for ix in range(self.num_layers)]
+        cts = [getattr(self, f'rnn{ix}').c0.expr(self.training) for ix in range(self.num_layers)]
+        return LSTMState(hts, cts, self.__call__)
+
+    def __call__(self, x: Expression, htm1s: List[Expression] = None, ctm1s: List[Expression] = None):
+        hts, cts = [], []
+
+        if htm1s is None:
+            htm1s = itertools.repeat(None)
+        if ctm1s is None:
+            ctm1s = itertools.repeat(None)
+        for ix, (htm1, ctm1) in enumerate(zip(htm1s, ctm1s)):
+            ht, ct = getattr(self, f'rnn{ix}')(x, htm1, ctm1)
+            hts.append(ht)
+            cts.append(ct)
+
+        return hts, cts
+
+    def transduce(self, xs: List[Expression],
+                  htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> List[Expression]:
+        fs = []
+        for x in xs:
+            ht, _ = self.__call__(x, htm1s, ctm1s)
+            fs.append(ht[-1])
+        return fs
+
+    def compress(self, xs: List[Expression],
+                 htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> Expression:
+        for x in xs:
+            ht, _ = self.__call__(x, htm1s, ctm1s)
+        return ht[-1]
+
+
+class BiLSTM(nn.Module):
+    def __init__(self, pc: ParameterCollection, num_layers: int,
+                 input_size: int, hidden_size: int,
+                 dropout: float = 0.05, zoneout: float = 0.05,
+                 activation=dy.tanh, recurrent_activation=dy.logistic):
+        super(BiLSTM, self).__init__(pc)
+
+        self.f = LSTM(self.pc, num_layers, input_size, hidden_size,
+                      dropout, zoneout, activation, recurrent_activation)
+        self.b = LSTM(self.pc, num_layers, input_size, hidden_size,
+                      dropout, zoneout, activation, recurrent_activation)
+
+    def transduce(self, xs: List[Expression],
+                  fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
+                  bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> List[Expression]:
+        fs = self.f.transduce(xs, fhtm1s, fctm1s)
+        bs = self.b.transduce(xs[::-1], bhtm1s, bctm1s)[::-1]
+        return [dy.concatenate([f, b]) for f, b in zip(fs, bs)]
+
+    def compress(self, xs: List[Expression],
+                 fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
+                 bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> Expression:
+        f = self.f.compress(xs, fhtm1s, fctm1s)
+        b = self.b.compress(xs, bhtm1s, bctm1s)
+        return dy.concatenate([f, b])
