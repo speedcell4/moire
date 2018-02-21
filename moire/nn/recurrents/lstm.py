@@ -143,8 +143,8 @@ class LSTM(nn.Module):
 
         fs = []
         for x in xs:
-            ht, _ = self.__call__(x, htm1s, ctm1s)
-            fs.append(ht[-1])
+            htm1s, ctm1s = self.__call__(x, htm1s, ctm1s)
+            fs.append(htm1s[-1])
         return fs
 
     def compress(self, xs: List[Expression],
@@ -152,8 +152,8 @@ class LSTM(nn.Module):
         assert len(xs) > 0
 
         for x in xs:
-            ht, _ = self.__call__(x, htm1s, ctm1s)
-        return ht[-1]
+            htm1s, ctm1s = self.__call__(x, htm1s, ctm1s)
+        return htm1s[-1]
 
 
 class BiLSTM(nn.Module):
