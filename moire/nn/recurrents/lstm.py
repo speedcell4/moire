@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import dynet as dy
 
 from moire import nn, Expression, ParameterCollection
@@ -39,7 +41,8 @@ class LSTMCell(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.zoneout = nn.Zoneout(zoneout)
 
-    def __call__(self, x: Expression, htm1: Expression = None, ctm1: Expression = None):
+    def __call__(self, x: Expression, htm1: Expression = None, ctm1: Expression = None) \
+            -> Tuple[Expression, Expression]:
         Wi = self.Wi.expr(self.training)
         Wf = self.Wf.expr(self.training)
         Wg = self.Wg.expr(self.training)
