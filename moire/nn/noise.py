@@ -13,7 +13,7 @@ class Dropout(nn.Function):
         self.ratio = ratio
 
     def __call__(self, x):
-        if self.training:
+        if self.training and self.ratio > 0.0:
             return dy.dropout(x, self.ratio)
         return x
 
@@ -24,7 +24,7 @@ class Zoneout(nn.Function):
         self.ratio = 1.0 - ratio
 
     def __call__(self, x, h):
-        if self.training:
+        if self.training and self.ratio < 1.0:
             cond = bernoulli_like(x, self.ratio)
             return where(cond, x, h)
         return x

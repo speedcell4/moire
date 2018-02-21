@@ -19,8 +19,8 @@ class Function(object):
         raise NotImplementedError
 
 
-# TODO save / load
 # TODO Builders
+# TODO save / load, pickle, copy, deepcopy
 class Module(object):
     def __init__(self, pc: ParameterCollection):
         self.pc: Model = pc.add_subcollection()
