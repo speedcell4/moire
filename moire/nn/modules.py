@@ -12,7 +12,7 @@ class Function(object):
     def __init__(self):
         self.training = False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError
 
     def copy_from(self, other: 'Function'):
