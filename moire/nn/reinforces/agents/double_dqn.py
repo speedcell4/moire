@@ -2,7 +2,7 @@ import dynet as dy
 from dynet import Trainer
 
 from moire import nn, ParameterCollection, Expression
-from moire.nn.indexing import EpsilonArgmax
+from moire.nn.indexing import EpsilonArgMax
 from moire.nn.reinforces.agents import AgentMixin
 from moire.nn.reinforces.replay_buffer import ReplayBuffer
 from moire.nn.utils import to_numpy
@@ -21,7 +21,7 @@ class DoubleDQN(AgentMixin, nn.Module):
 
         self.gamma = gamma
         self.epsilon = epsilon
-        self.epsilon_argmax = EpsilonArgmax(epsilon)
+        self.epsilon_argmax = EpsilonArgMax(epsilon)
 
         self.optimizer = optimizer
         self.online_q_function = online_q_function

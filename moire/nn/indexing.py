@@ -1,6 +1,9 @@
-import dynet as dy
+from moire import nn, Expression, bernoulli, uniform
 
-from moire import nn, Expression
+__all__ = [
+    'argmax', 'argmin',
+    'EpsilonArgMax', 'EpsilonArgMin',
+]
 
 
 def argmax(x: Expression, axis: int = None) -> int:
@@ -11,9 +14,9 @@ def argmin(x: Expression, axis: int = None) -> int:
     return int(x.npvalue().argmin(axis=axis))
 
 
-class EpsilonArgmax(nn.Function):
+class EpsilonArgMax(nn.Function):
     def __init__(self, epsilon: float, axis: int = None):
-        super(EpsilonArgmax, self).__init__()
+        super(EpsilonArgMax, self).__init__()
         self.epsilon = epsilon
         self.axis = axis
 
@@ -21,12 +24,15 @@ class EpsilonArgmax(nn.Function):
         return f'<{self.__class__.__name__} : {self.epsilon}>'
 
     def __call__(self, x: Expression) -> int:
-        raise NotImplementedError
+        if self.training and bernoulli(p=self.epsilon).value():
+            dim, batch_size = x.dim()
+            return int(uniform(low=0, high=dim[0]).value())
+        return argmax(x, self.axis)
 
 
-class EpsilonArgmin(nn.Function):
+class EpsilonArgMin(nn.Function):
     def __init__(self, epsilon: float, axis: int = None):
-        super(EpsilonArgmin, self).__init__()
+        super(EpsilonArgMin, self).__init__()
         self.epsilon = epsilon
         self.axis = axis
 
@@ -34,9 +40,7 @@ class EpsilonArgmin(nn.Function):
         return f'<{self.__class__.__name__} : {self.epsilon}>'
 
     def __call__(self, x: Expression) -> int:
-        raise NotImplementedError
-
-
-if __name__ == '__main__':
-    x = dy.inputVector([1, 2, 3])
-    print(argmax(x))
+        if self.training and bernoulli(p=self.epsilon).value():
+            dim, batch_size = x.dim()
+            return int(uniform(low=0, high=dim[0]).value())
+        return argmin(x, self.axis)
