@@ -1,6 +1,9 @@
+import itertools
 from collections import OrderedDict
+from pathlib import Path
 
 import dynet as dy
+import numpy as np
 
 from moire import ParameterCollection, Parameters, LookupParameters
 
@@ -92,3 +95,14 @@ class Module(object):
 
     def __call__(self, *inputs):
         raise NotImplementedError
+
+    def save(self, path: Path) -> None:
+        return np.save(path.expanduser().absolute().__str__(),
+                       itertools.chain(self.parameters, self.lookup_parameters))
+
+    def load(self, path: Path) -> None:
+        values = np.load(path.expanduser().absolute().__str__())
+        for parameter in self.parameters:
+            parameter.set_value(next(values))
+        for lookup_parameter in self.lookup_parameters:
+            lookup_parameter.init_from_array(next(values))
