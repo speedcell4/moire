@@ -8,6 +8,8 @@ from moire.nn.reinforces.replay_buffer import ReplayBuffer
 from moire.nn.utils import to_numpy
 
 
+# TODO sync target and online
+
 class DoubleDQN(AgentMixin, nn.Module):
     def __init__(self, pc: ParameterCollection, optimizer: Trainer,
                  online_q_function, target_q_function,

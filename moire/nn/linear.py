@@ -3,10 +3,6 @@ import dynet as dy
 from moire import nn, Expression, ParameterCollection, Activation
 from moire.nn.utils import compute_hidden_size
 
-__all__ = [
-    'Linear', 'MLP', 'BiLinear',
-]
-
 
 # TODO initializer
 class Linear(nn.Module):

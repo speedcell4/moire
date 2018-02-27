@@ -5,10 +5,6 @@ from dynet import Model
 
 from moire import nn, Expression, ParameterCollection, normal
 
-__all__ = [
-    'Conv2d', 'MaxPooling2d',
-]
-
 
 class Conv2d(nn.Module):
     def __init__(self, pc: ParameterCollection, in_channels: int, out_channels: int,

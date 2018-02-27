@@ -6,10 +6,6 @@ import dynet as dy
 from moire import nn, Expression, ParameterCollection
 from moire.nn.recurrents.utils import scan
 
-__all__ = [
-    'LSTMState', 'LSTMCell', 'LSTM', 'BiLSTM',
-]
-
 
 class LSTMCell(nn.Module):
     def __init__(self, pc: ParameterCollection,
@@ -77,9 +73,9 @@ class LSTMCell(nn.Module):
         o = self.fo(dy.affine_transform([bo, Wo, x, Uo, htm1]))
 
         ct = dy.cmult(f, ctm1) + dy.cmult(i, g)
-        ct = self.zoneout(ct, ctm1)
-
         ht = dy.cmult(o, self.fg(ctm1))
+
+        ct = self.zoneout(ct, ctm1)
         ht = self.zoneout(ht, htm1)
 
         return ht, ct

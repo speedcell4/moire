@@ -13,7 +13,7 @@ class Function(object):
         self.training = False
 
     def __repr__(self) -> str:
-        raise NotImplementedError
+        return f'{self.__class__.__name__}'
 
     def copy_from(self, other: 'Function'):
         pass
@@ -35,8 +35,8 @@ class Module(object):
         self._parameters = OrderedDict()
         self._lookup_parameters = OrderedDict()
 
-    def __repr__(self):
-        raise NotImplementedError
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}'
 
     @property
     def training(self) -> bool:

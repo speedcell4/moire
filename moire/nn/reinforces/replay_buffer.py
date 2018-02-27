@@ -2,10 +2,6 @@ from collections import deque
 
 import numpy as np
 
-__all__ = [
-    'ReplayBuffer',
-]
-
 
 class ReplayBuffer(object):
     def __init__(self, capacity: int = None):
