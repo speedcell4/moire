@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='moire',
     version='0.0.1',
-    packages=['moire'],
+    packages=['moire', 'moire.nn'],
     url='',
     license='MIT',
     author='speedcell4',
