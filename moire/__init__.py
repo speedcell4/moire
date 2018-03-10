@@ -10,3 +10,4 @@ LookupParameters = dy.LookupParameters
 ParameterCollection = dy.ParameterCollection
 
 from .array import *
+from .configuration import config
