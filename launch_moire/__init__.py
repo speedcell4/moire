@@ -2,24 +2,24 @@ import sys
 import warnings
 
 __all__ = [
-    'launch_dynet',
+    'launch_moire',
 ]
 
 
 def _option_value(key, value) -> None:
     if value is not None:
-        sys.argv.append(f'{key}')
+        sys.argv.append(f'--{key}')
         sys.argv.append(f'{value}')
 
 
-def launch_dynet(device: str = 'CPU', memory: int = 1500, random_seed: int = 333,
+def launch_moire(device: str = 'CPU', memory: int = 1500, random_seed: int = 333,
                  weight_decay: float = 1e-6, autobatch: int = 0, profiling: int = 0):
-    _option_value(f'--dynet-devices', device)
-    _option_value(f'--dynet-mem', memory)
-    _option_value(f'--dynet-seed', random_seed)
-    _option_value(f'--dynet-weight-decay', weight_decay)
-    _option_value(f'--dynet-autobatch', autobatch)
-    _option_value(f'--dynet-profiling', profiling)
+    _option_value(f'dynet-mem', memory)
+    _option_value(f'dynet-devices', device)
+    _option_value(f'dynet-seed', random_seed)
+    _option_value(f'dynet-weight-decay', weight_decay)
+    _option_value(f'dynet-autobatch', autobatch)
+    _option_value(f'dynet-profiling', profiling)
 
     import moire
     moire.config.device = device
@@ -41,4 +41,4 @@ def launch_dynet(device: str = 'CPU', memory: int = 1500, random_seed: int = 333
 
 
 if __name__ == '__main__':
-    launch_dynet(random_seed=2333, weight_decay=1e-6)
+    launch_moire(random_seed=2333, weight_decay=1e-6)
