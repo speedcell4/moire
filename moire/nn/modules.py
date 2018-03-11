@@ -10,7 +10,7 @@ from moire import ParameterCollection, Parameters, LookupParameters
 
 class Function(object):
     def __init__(self):
-        self.training = False
+        super(Function, self).__init__()
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}'
@@ -26,9 +26,9 @@ class Function(object):
 # TODO save / load, pickle, copy, deepcopy
 class Module(object):
     def __init__(self, pc: ParameterCollection):
-        self.pc: dy.Model = pc.add_subcollection()
+        super(Module, self).__init__()
 
-        self._training = False
+        self.pc: dy.Model = pc.add_subcollection()
 
         self._modules = OrderedDict()
         self._functions = OrderedDict()
@@ -38,16 +38,11 @@ class Module(object):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}'
 
-    @property
-    def training(self) -> bool:
-        return self._training
+    def add_param(self, shape, initializer):
+        return self.pc.add_parameters(shape, initializer(shape))
 
-    @training.setter
-    def training(self, value: bool) -> None:
-        if self._training != value:
-            self._training = value
-            for child in self.children:
-                child.training = value
+    def add_lookup(self, shape, initializer):
+        return self.pc.add_lookup_parameters(shape, initializer(shape))
 
     @property
     def children(self):

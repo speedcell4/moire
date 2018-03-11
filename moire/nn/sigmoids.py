@@ -4,12 +4,26 @@ import dynet as dy
 import numpy as np
 
 import moire
+from moire.array import full_like
 from moire import ParameterCollection, nn, Expression, where
 
 __all__ = [
+    'sigmoid', 'hard_sigmoid',
     'log_softmax',
     'MaskedLogSoftmax', 'RestrictedLogSoftmax',
 ]
+
+sigmoid = dy.logistic
+
+
+def clip(x: Expression, a_min: float, a_max: float) -> Expression:
+    a_min = full_like(x, a_min)
+    a_max = full_like(x, a_max)
+    return dy.bmax(a_min, dy.bmin(a_max, x))
+
+
+def hard_sigmoid(x: Expression) -> Expression:
+    return clip(x * 0.2 + 0.5, 0.0, 1.0)
 
 
 def log_softmax(x: Expression, restrict=None) -> Expression:
