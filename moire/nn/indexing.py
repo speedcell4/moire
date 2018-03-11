@@ -1,3 +1,4 @@
+import moire
 from moire import nn, Expression, bernoulli, uniform
 
 __all__ = [
@@ -24,7 +25,7 @@ class EpsilonArgMax(nn.Function):
         return f'<{self.__class__.__name__} : {self.epsilon}>'
 
     def __call__(self, x: Expression) -> int:
-        if self.training and bernoulli(p=self.epsilon).value():
+        if moire.config.train and bernoulli(p=self.epsilon).value():
             dim, batch_size = x.dim()
             return int(uniform(low=0, high=dim[0]).value())
         return argmax(x, self.axis)
@@ -40,7 +41,7 @@ class EpsilonArgMin(nn.Function):
         return f'<{self.__class__.__name__} : {self.epsilon}>'
 
     def __call__(self, x: Expression) -> int:
-        if self.training and bernoulli(p=self.epsilon).value():
+        if moire.config.train and bernoulli(p=self.epsilon).value():
             dim, batch_size = x.dim()
             return int(uniform(low=0, high=dim[0]).value())
         return argmin(x, self.axis)
