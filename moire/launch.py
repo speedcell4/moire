@@ -10,8 +10,8 @@ def _add_option(key, value):
         sys.argv.append(f'{value}')
 
 
-def initiate_dynet(device: str = 'CPU', memory: int = 1500, random_seed: int = None,
-                   weight_decay: float = None, autobatch: int = None, profiling: int = None):
+def launch_dynet(device: str = 'CPU', memory: int = 1500, random_seed: int = None,
+                 weight_decay: float = None, autobatch: int = None, profiling: int = None):
     _add_option(f'--dynet-devices', device)
     _add_option(f'--dynet-seed', random_seed)
     _add_option(f'--dynet-mem', memory)
@@ -39,4 +39,4 @@ def initiate_dynet(device: str = 'CPU', memory: int = 1500, random_seed: int = N
 
 
 if __name__ == '__main__':
-    initiate_dynet(random_seed=2333, weight_decay=1e-6)
+    launch_dynet(random_seed=2333, weight_decay=1e-6)
