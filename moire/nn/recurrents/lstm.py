@@ -3,69 +3,76 @@ from typing import Tuple, List
 
 import dynet as dy
 
+import moire
 from moire import nn, Expression, ParameterCollection
-from moire.nn.recurrents.utils import scan
+from moire.nn.inits import Uniform, GlorotNormal, Orthogonal, Zero, One
+from moire.nn.sigmoids import sigmoid
+from moire.nn.trigonometry import tanh
 
+
+# TODO move to hard_sigmoid ?
 
 class LSTMCell(nn.Module):
     def __init__(self, pc: ParameterCollection,
                  input_size: int, hidden_size: int,
-                 dropout: float = 0.05, zoneout: float = 0.05,
-                 activation=dy.tanh, recurrent_activation=dy.logistic) -> None:
+                 dropout_ratio: float = None, zoneout_ratio: float = None,
+                 activation=tanh, recurrent_activation=sigmoid,
+                 kernel_initializer=GlorotNormal(), recurrent_initializer=Orthogonal(),
+                 hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()) -> None:
         super(LSTMCell, self).__init__(pc)
 
-        self.h0 = self.pc.add_parameters((hidden_size,), init=dy.NormalInitializer())
-        self.c0 = self.pc.add_parameters((hidden_size,), init=dy.NormalInitializer())
+        self.h0 = self.add_param((hidden_size,), hidden_initializer)
+        self.c0 = self.add_param((hidden_size,), hidden_initializer)
 
-        self.Wi = self.pc.add_parameters((hidden_size, input_size), init=dy.GlorotInitializer(is_lookup=False))
-        self.Wf = self.pc.add_parameters((hidden_size, input_size), init=dy.GlorotInitializer(is_lookup=False))
-        self.Wg = self.pc.add_parameters((hidden_size, input_size), init=dy.GlorotInitializer(is_lookup=False))
-        self.Wo = self.pc.add_parameters((hidden_size, input_size), init=dy.GlorotInitializer(is_lookup=False))
+        self.Wi = self.add_param((hidden_size, input_size), kernel_initializer)
+        self.Wf = self.add_param((hidden_size, input_size), kernel_initializer)
+        self.Wg = self.add_param((hidden_size, input_size), kernel_initializer)
+        self.Wo = self.add_param((hidden_size, input_size), kernel_initializer)
 
-        self.Ui = self.pc.add_parameters((hidden_size, hidden_size), init=dy.SaxeInitializer())
-        self.Uf = self.pc.add_parameters((hidden_size, hidden_size), init=dy.SaxeInitializer())
-        self.Ug = self.pc.add_parameters((hidden_size, hidden_size), init=dy.SaxeInitializer())
-        self.Uo = self.pc.add_parameters((hidden_size, hidden_size), init=dy.SaxeInitializer())
+        self.Ui = self.add_param((hidden_size, hidden_size), recurrent_initializer)
+        self.Uf = self.add_param((hidden_size, hidden_size), recurrent_initializer)
+        self.Ug = self.add_param((hidden_size, hidden_size), recurrent_initializer)
+        self.Uo = self.add_param((hidden_size, hidden_size), recurrent_initializer)
 
-        self.bi = self.pc.add_parameters((hidden_size,), init=dy.ConstInitializer(0.0))
-        self.bf = self.pc.add_parameters((hidden_size,), init=dy.ConstInitializer(1.0))
-        self.bg = self.pc.add_parameters((hidden_size,), init=dy.ConstInitializer(0.0))
-        self.bo = self.pc.add_parameters((hidden_size,), init=dy.ConstInitializer(0.0))
+        self.bi = self.add_param((hidden_size,), bias_initializer)
+        self.bf = self.add_param((hidden_size,), forget_bias_initializer)
+        self.bg = self.add_param((hidden_size,), bias_initializer)
+        self.bo = self.add_param((hidden_size,), bias_initializer)
 
         self.fi = recurrent_activation
         self.ff = recurrent_activation
         self.fg = activation
         self.fo = recurrent_activation
 
-        self.dropout_ratio = dropout
-        self.zoneout_ratio = zoneout
+        self.dropout_ratio = dropout_ratio
+        self.zoneout_ratio = zoneout_ratio
 
-        self.dropout = nn.Dropout(dropout)
-        self.zoneout = nn.Zoneout(zoneout)
+        self.dropout = nn.Dropout(dropout_ratio)
+        self.zoneout = nn.Zoneout(zoneout_ratio)
 
-    def __call__(self, x: Expression, htm1: Expression = None, ctm1: Expression = None) \
-            -> Tuple[Expression, Expression]:
-        Wi = self.Wi.expr(self.training)
-        Wf = self.Wf.expr(self.training)
-        Wg = self.Wg.expr(self.training)
-        Wo = self.Wo.expr(self.training)
+    def __call__(self, x: Expression,
+                 htm1: Expression = None, ctm1: Expression = None) -> Tuple[Expression, Expression]:
+        Wi = self.Wi.expr(moire.config.train)
+        Wf = self.Wf.expr(moire.config.train)
+        Wg = self.Wg.expr(moire.config.train)
+        Wo = self.Wo.expr(moire.config.train)
 
-        Ui = self.Ui.expr(self.training)
-        Uf = self.Uf.expr(self.training)
-        Ug = self.Ug.expr(self.training)
-        Uo = self.Uo.expr(self.training)
+        Ui = self.Ui.expr(moire.config.train)
+        Uf = self.Uf.expr(moire.config.train)
+        Ug = self.Ug.expr(moire.config.train)
+        Uo = self.Uo.expr(moire.config.train)
 
-        bi = self.bi.expr(self.training)
-        bf = self.bf.expr(self.training)
-        bg = self.bg.expr(self.training)
-        bo = self.bo.expr(self.training)
+        bi = self.bi.expr(moire.config.train)
+        bf = self.bf.expr(moire.config.train)
+        bg = self.bg.expr(moire.config.train)
+        bo = self.bo.expr(moire.config.train)
 
         x = self.dropout(x)
 
         if htm1 is None:
-            htm1 = self.h0.expr(self.training)
+            htm1 = self.h0.expr(moire.config.train)
         if ctm1 is None:
-            ctm1 = self.c0.expr(self.training)
+            ctm1 = self.c0.expr(moire.config.train)
 
         i = self.fi(dy.affine_transform([bi, Wi, x, Ui, htm1]))
         f = self.ff(dy.affine_transform([bf, Wf, x, Uf, htm1]))
@@ -82,24 +89,29 @@ class LSTMCell(nn.Module):
 
 
 class LSTMState(object):
-    def __init__(self, hts: List[Expression], cts: List[Expression], apply):
+    __slots__ = ('hts', 'cts', 'step')
+
+    def __init__(self, hts: List[Expression], cts: List[Expression], step) -> None:
+        super(LSTMState, self).__init__()
         self.hts = hts
         self.cts = cts
-        self.apply = apply
+        self.step = step
 
     def add_input(self, x: Expression) -> 'LSTMState':
-        hts, cts = self.apply(x, self.hts, self.cts)
-        return LSTMState(hts, cts, self.apply)
+        hts, cts = self.step(x, self.hts, self.cts)
+        return LSTMState(hts, cts, self.step)
 
-    def output(self):
+    def output(self) -> Expression:
         return self.hts[-1]
 
 
 class LSTM(nn.Module):
     def __init__(self, pc: ParameterCollection, num_layers: int,
                  input_size: int, hidden_size: int,
-                 dropout: float = 0.05, zoneout: float = 0.05,
-                 activation=dy.tanh, recurrent_activation=dy.logistic):
+                 dropout_ratio: float = None, zoneout_ratio: float = None,
+                 activation=tanh, recurrent_activation=sigmoid,
+                 kernel_initializer=GlorotNormal(), recurrent_initializer=Orthogonal(),
+                 hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()) -> None:
         super(LSTM, self).__init__(pc)
 
         self.num_layers = num_layers
@@ -107,8 +119,11 @@ class LSTM(nn.Module):
         self.hidden_size = hidden_size
 
         _commons = dict(
-            dropout=dropout, zoneout=zoneout,
+            dropout_ratio=dropout_ratio, zoneout_ratio=zoneout_ratio,
             activation=activation, recurrent_activation=recurrent_activation,
+            kernel_initializer=kernel_initializer, recurrent_initializer=recurrent_initializer,
+            hidden_initializer=hidden_initializer,
+            bias_initializer=bias_initializer, forget_bias_initializer=forget_bias_initializer,
         )
 
         self.rnn0 = LSTMCell(self.pc, input_size, hidden_size, **_commons)
@@ -116,21 +131,24 @@ class LSTM(nn.Module):
             setattr(self, f'rnn{ix}', LSTMCell(self.pc, hidden_size, hidden_size, **_commons))
 
     def init_state(self) -> 'LSTMState':
-        hts = [getattr(self, f'rnn{ix}').h0.expr(self.training) for ix in range(self.num_layers)]
-        cts = [getattr(self, f'rnn{ix}').c0.expr(self.training) for ix in range(self.num_layers)]
+        hts = [getattr(self, f'rnn{ix}').h0.expr(moire.config.train)
+               for ix in range(self.num_layers)]
+        cts = [getattr(self, f'rnn{ix}').c0.expr(moire.config.train)
+               for ix in range(self.num_layers)]
         return LSTMState(hts, cts, self.__call__)
 
     def __call__(self, x: Expression, htm1s: List[Expression] = None, ctm1s: List[Expression] = None):
         hts, cts = [], []
 
         if htm1s is None:
-            htm1s = itertools.repeat(None)
+            htm1s = itertools.repeat(None, self.num_layers)
         if ctm1s is None:
-            ctm1s = itertools.repeat(None)
+            ctm1s = itertools.repeat(None, self.num_layers)
         for ix, (htm1, ctm1) in enumerate(zip(htm1s, ctm1s)):
             ht, ct = getattr(self, f'rnn{ix}')(x, htm1, ctm1)
             hts.append(ht)
             cts.append(ct)
+            x = ht
 
         return hts, cts
 
@@ -138,25 +156,38 @@ class LSTM(nn.Module):
                   htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> List[Expression]:
         assert len(xs) > 0
 
-        hs, _ = zip(*scan(self.__call__, xs, htm1s, ctm1s))
-        return hs
+        hts = []
+        for x in xs:
+            htm1s, ctm1s = self.__call__(x, htm1s, ctm1s)
+            hts.append(htm1s[-1])
+        return hts
 
     def compress(self, xs: List[Expression],
                  htm1s: List[Expression] = None, ctm1s: List[Expression] = None) -> Expression:
+        if len(xs) == 0:
+            return self.init_state().hts[-1]
         return self.transduce(xs, htm1s, ctm1s)[-1]
 
 
 class BiLSTM(nn.Module):
     def __init__(self, pc: ParameterCollection, num_layers: int,
                  input_size: int, hidden_size: int,
-                 dropout: float = 0.05, zoneout: float = 0.05,
-                 activation=dy.tanh, recurrent_activation=dy.logistic):
+                 dropout_ratio: float = None, zoneout_ratio: float = None,
+                 activation=tanh, recurrent_activation=sigmoid,
+                 kernel_initializer=GlorotNormal(), recurrent_initializer=Orthogonal(),
+                 hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()) -> None:
         super(BiLSTM, self).__init__(pc)
 
         self.f = LSTM(self.pc, num_layers, input_size, hidden_size,
-                      dropout, zoneout, activation, recurrent_activation)
+                      dropout_ratio, zoneout_ratio, activation, recurrent_activation,
+                      kernel_initializer=kernel_initializer, recurrent_initializer=recurrent_initializer,
+                      hidden_initializer=hidden_initializer,
+                      bias_initializer=bias_initializer, forget_bias_initializer=forget_bias_initializer)
         self.b = LSTM(self.pc, num_layers, input_size, hidden_size,
-                      dropout, zoneout, activation, recurrent_activation)
+                      dropout_ratio, zoneout_ratio, activation, recurrent_activation,
+                      kernel_initializer=kernel_initializer, recurrent_initializer=recurrent_initializer,
+                      hidden_initializer=hidden_initializer,
+                      bias_initializer=bias_initializer, forget_bias_initializer=forget_bias_initializer)
 
     def transduce(self, xs: List[Expression],
                   fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
@@ -171,3 +202,22 @@ class BiLSTM(nn.Module):
         f = self.f.compress(xs, fhtm1s, fctm1s)
         b = self.b.compress(xs[::-1], bhtm1s, bctm1s)
         return dy.concatenate([f, b])
+
+
+if __name__ == '__main__':
+    rnn = LSTM(ParameterCollection(), 1, 4, 5)
+    dy.renew_cg()
+
+    xs = [
+        dy.inputVector([1, 2, 3, 4]),
+        dy.inputVector([1, 2, 3, 4]),
+    ]
+
+    s0 = rnn.init_state()
+    print(s0.output().value())
+
+    s1 = s0.add_input(dy.inputVector([1, 2, 3, 4]))
+    print(s1.output().value())
+
+    s2 = s1.add_input(dy.inputVector([1, 2, 3, 4]))
+    print(s2.output().value())
