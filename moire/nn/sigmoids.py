@@ -3,11 +3,20 @@ from typing import List
 import dynet as dy
 import numpy as np
 
+import moire
 from moire import ParameterCollection, nn, Expression, where
 
 __all__ = [
+    'log_softmax',
     'MaskedLogSoftmax', 'RestrictedLogSoftmax',
 ]
+
+
+def log_softmax(x: Expression, restrict=None) -> Expression:
+    if restrict is None or moire.config.device == 'CPU':
+        return dy.log_softmax(x, restrict)
+    y = dy.log_softmax(dy.to_device(x, 'CPU'), restrict=restrict)
+    return dy.to_device(y, moire.config.device)
 
 
 class MaskedLogSoftmax(nn.Module):
