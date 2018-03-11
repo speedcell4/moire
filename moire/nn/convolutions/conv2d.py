@@ -3,14 +3,16 @@ from typing import Tuple, Union, Optional
 import dynet as dy
 from dynet import Model
 
+import moire
 from moire import nn, Expression, ParameterCollection, normal
+from moire.nn.inits import Xavier, Zero
 
 
 class Conv2d(nn.Module):
     def __init__(self, pc: ParameterCollection, in_channels: int, out_channels: int,
                  kernel_size: Union[int, Tuple[int, int]],
-                 stride_size: Union[int, Tuple[int, int]],
-                 pad_zero: bool = False, bias: bool = True) -> None:
+                 stride_size: Union[int, Tuple[int, int]], pad_zero: bool = False,
+                 kernel_initializer=Xavier(), bias_initializer=Zero(), use_bias: bool = True) -> None:
         super(Conv2d, self).__init__(pc)
 
         self.is_valid = not pad_zero
@@ -21,13 +23,11 @@ class Conv2d(nn.Module):
         if isinstance(stride_size, int):
             stride_size = (stride_size, stride_size)
         self.stride_size = list(stride_size)
-        self.bias = bias
+        self.use_bias = use_bias
 
-        # TODO initialization
-        self.f = self.pc.add_parameters(
-            (*self.kernel_size, in_channels, out_channels))
-        if bias:
-            self.b = self.pc.add_parameters((out_channels,), init=dy.ConstInitializer(0.0))
+        self.f = self.add_param((*self.kernel_size, in_channels, out_channels), kernel_initializer)
+        if use_bias:
+            self.b = self.add_param((out_channels,), bias_initializer)
 
     def __repr__(self):
         k1, k2 = self.kernel_size
@@ -40,9 +40,9 @@ class Conv2d(nn.Module):
         :return: [Height x Width x nChannels, nBatches]
         """
 
-        f = self.f.expr(self.training)
-        if self.bias:
-            b = self.b.expr(self.training)
+        f = self.f.expr(moire.config.train)
+        if self.use_bias:
+            b = self.b.expr(moire.config.train)
             return dy.conv2d_bias(x, f, b, self.stride_size, is_valid=self.is_valid)
         return dy.conv2d(x, f, self.stride_size, is_valid=self.is_valid)
 
@@ -80,7 +80,7 @@ class MaxPooling2d(nn.Function):
 if __name__ == '__main__':
     in_channels = 2
     out_channels = 10
-    conv2d = Conv2d(Model(), in_channels, out_channels, 3, 1, bias=False)
+    conv2d = Conv2d(Model(), in_channels, out_channels, 3, 1, use_bias=False)
     maxpool2d = MaxPooling2d((3, None), 1, pad_zero=True)
     dy.renew_cg(True, True)
 
