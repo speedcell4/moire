@@ -1,9 +1,9 @@
 import dynet as dy
 
-import nn
 import moire
-from moire.nn.inits import Zero, GlorotUniform
 from moire import ParameterCollection, Expression
+from moire import nn
+from moire.nn.inits import Zero, GlorotUniform
 
 
 class BiLinear(nn.Module):

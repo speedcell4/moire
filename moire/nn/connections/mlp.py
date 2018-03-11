@@ -1,5 +1,5 @@
-import nn
 from moire import ParameterCollection, Activation, Expression
+from moire import nn
 from moire.nn.connections.linear import Linear
 from moire.nn.inits import GlorotUniform, calculate_gain
 from moire.nn.thresholds import LeakyRelu

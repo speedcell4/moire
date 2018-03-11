@@ -189,6 +189,8 @@ class BiLSTM(nn.Module):
                       hidden_initializer=hidden_initializer,
                       bias_initializer=bias_initializer, forget_bias_initializer=forget_bias_initializer)
 
+        self.hidden_size = self.f.hidden_size + self.b.hidden_size
+
     def transduce(self, xs: List[Expression],
                   fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                   bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> List[Expression]:
