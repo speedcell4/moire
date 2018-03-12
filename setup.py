@@ -10,6 +10,7 @@ setup(
         'moire.nn.connections',
         'moire.nn.convolutions',
         'moire.nn.recurrents',
+        'moire.nn.reinforces',
         'moire.nn.sparses',
     ],
     url='',
