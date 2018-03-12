@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 import dynet as dy
 from chainerrl.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
@@ -8,7 +10,11 @@ __all__ = [
 ]
 
 
-def batch_experiences(experiences):
+def batch_experiences(experiences,
+                      state_type=dy.inputVector,
+                      action_type=int,
+                      reward_type=float,
+                      terminal_type=float) -> List[Tuple]:
     exp_batch = []
     for instance in experiences:
         state = instance['state']
@@ -19,10 +25,10 @@ def batch_experiences(experiences):
         is_state_terminal = instance['is_state_terminal']
 
         exp_batch.append((
-            dy.inputVector(state), int(action),
-            float(reward),
-            dy.inputVector(next_state), int(next_action),
-            float(is_state_terminal),
+            state_type(state), action_type(action),
+            reward_type(reward),
+            state_type(next_state), action_type(next_action),
+            terminal_type(is_state_terminal),
         ))
 
     return exp_batch
