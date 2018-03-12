@@ -22,8 +22,7 @@ def train(
     import dynet as dy
     from moire import ParameterCollection
     from moire import nn
-    from moire.nn.reinforces.agents import DoubleDQN
-    from moire.nn.reinforces.replay_buffer import ReplayBuffer
+    from moire.nn.reinforces import DoubleDQN, ReplayBuffer
 
     moire.config.epsilon = start_epsilon
 
