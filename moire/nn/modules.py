@@ -5,6 +5,7 @@ from pathlib import Path
 import dynet as dy
 import numpy as np
 
+import moire
 from moire import ParameterCollection, Parameters, LookupParameters
 
 
@@ -39,10 +40,10 @@ class Module(object):
         return f'{self.__class__.__name__}'
 
     def add_param(self, shape, initializer):
-        return self.pc.add_parameters(shape, initializer(shape))
+        return self.pc.add_parameters(shape, initializer(shape), device=moire.config.device)
 
     def add_lookup(self, shape, initializer):
-        return self.pc.add_lookup_parameters(shape, initializer(shape))
+        return self.pc.add_lookup_parameters(shape, initializer(shape), device=moire.config.device)
 
     @property
     def children(self):

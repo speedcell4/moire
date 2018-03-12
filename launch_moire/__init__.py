@@ -12,17 +12,17 @@ def _option_value(key, value) -> None:
         sys.argv.append(f'{value}')
 
 
-def launch_moire(device: str = 'CPU', memory: int = 1500, random_seed: int = 333,
+def launch_moire(devices: str = 'CPU', memory: int = 1500, random_seed: int = 333,
                  weight_decay: float = 1e-6, autobatch: int = 0, profiling: int = 0):
     _option_value(f'dynet-mem', memory)
-    _option_value(f'dynet-devices', device)
+    _option_value(f'dynet-devices', devices)
     _option_value(f'dynet-seed', random_seed)
     _option_value(f'dynet-weight-decay', weight_decay)
     _option_value(f'dynet-autobatch', autobatch)
     _option_value(f'dynet-profiling', profiling)
 
     import moire
-    moire.config.device = device
+    moire.config.device = devices
 
     import random
     random.seed(random_seed)
