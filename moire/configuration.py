@@ -1,6 +1,8 @@
 import contextlib
 import copy
 import sys
+from pathlib import Path
+from typing import Optional
 
 
 class Configuration(object):
@@ -37,3 +39,20 @@ def using_config(**kwargs):
         yield
     finally:
         config = old_config
+
+
+@contextlib.contextmanager
+def redirect_stream(name: str, path: Optional[Path], mode: str = 'r', encoding: str = 'utf-8'):
+    if path is None:
+        with using_config(**{name: path}):
+            try:
+                yield
+            finally:
+                pass
+    else:
+        with path.expanduser().absolute().open(mode, encoding=encoding) as fp:
+            with using_config(**{name: fp}):
+                try:
+                    yield
+                finally:
+                    pass
