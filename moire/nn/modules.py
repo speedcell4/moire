@@ -74,9 +74,9 @@ class Module(object):
         for target, source in zip(self.functions, other.functions):
             target.copy_from(source)
         for target, source in zip(self.parameters, other.parameters):
-            target.set_value(source.value())
+            target.set_value(source.as_array())
         for target, source in zip(self.lookup_parameters, other.lookup_parameters):
-            target.set_value(source.value())
+            target.set_value(source.as_array())
 
     def __setattr__(self, key, value):
         if isinstance(value, Module):
