@@ -223,13 +223,17 @@ class BiLSTM(nn.Module):
     def compress(self, xs: List[Expression],
                  fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                  bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> Expression:
-        f = self.f.transduce(xs, fhtm1s, fctm1s)[-1]
-        b = self.b.transduce(xs[::-1], bhtm1s, bctm1s)[::-1][-1]
+        if len(xs) == 0:
+            f = self.f.init_state().hts[-1]
+            b = self.b.init_state().hts[-1]
+        else:
+            f = self.f.transduce(xs, fhtm1s, fctm1s)[-1]
+            b = self.b.transduce(xs[::-1], bhtm1s, bctm1s)[0]
         return self.merge([f, b])
 
 
 if __name__ == '__main__':
-    rnn = BiLSTM(ParameterCollection(), 1, 4, 5, merge_strategy='sum')
+    rnn = BiLSTM(ParameterCollection(), 1, 4, 5, merge_strategy='cat')
     dy.renew_cg()
 
     xs = [
@@ -245,3 +249,6 @@ if __name__ == '__main__':
         print(f'z :: {z.dim()} => {z.value()}')
 
     assert np.allclose(y.npvalue(), rnn.transduce(xs)[-1].npvalue())
+
+    w = rnn.compress([])
+    print(f'w :: {w.dim()} => {w.value()}')
