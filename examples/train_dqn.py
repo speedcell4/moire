@@ -10,7 +10,7 @@ app = aku.App(__file__)
 def train(device: str = 'CPU', gamma: float = 0.95, batch_size: int = 32, replay_start_size: int = 500,
           target_update_interval: int = 100, start_epsilon: float = 0.3, epsilon_decay_interval: int = 50000,
           epsilon_decay: float = 0.03, nb_iterations: int = 200000000, capacity: int = 10 ** 6, num_layers: int = 2,
-          hidden_size: int = 200):
+          hidden_size: int = 200, update_interval: int = 1):
     launch_moire.launch_moire(device)
 
     import dynet as dy
@@ -30,7 +30,7 @@ def train(device: str = 'CPU', gamma: float = 0.95, batch_size: int = 32, replay
     replay_buffer = ReplayBuffer(capacity)
 
     agent = DQN(q_function, target_q_function, replay_buffer, optimizer, gamma, batch_size,
-                replay_start_size, 1, 5, target_update_interval)
+                replay_start_size, 1, update_interval, target_update_interval)
 
     env = gym.make('CartPole-v0')
     for i_episode in range(1, nb_iterations):
