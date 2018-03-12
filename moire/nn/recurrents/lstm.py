@@ -171,55 +171,75 @@ class LSTM(nn.Module):
 
 class BiLSTM(nn.Module):
     def __init__(self, pc: ParameterCollection, num_layers: int,
-                 input_size: int, hidden_size: int,
+                 input_size: int, output_size: int, merge_strategy: str,
                  dropout_ratio: float = None, zoneout_ratio: float = None,
                  activation=tanh, recurrent_activation=sigmoid,
                  kernel_initializer=GlorotNormal(), recurrent_initializer=Orthogonal(),
                  hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()) -> None:
         super(BiLSTM, self).__init__(pc)
+        assert merge_strategy in ['cat', 'avg', 'sum']
 
-        self.f = LSTM(self.pc, num_layers, input_size, hidden_size,
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.output_size = output_size
+        self.dropout_ratio = dropout_ratio
+        self.zoneout_ratio = zoneout_ratio
+
+        self.merge_strategy = merge_strategy
+
+        if merge_strategy == 'cat':
+            forward_size = output_size // 2
+            backward_size = output_size - output_size // 2
+            self.merge = dy.concatenate
+        elif merge_strategy == 'avg':
+            forward_size = output_size
+            backward_size = output_size
+            self.merge = dy.average
+        elif merge_strategy == 'sum':
+            forward_size = output_size
+            backward_size = output_size
+            self.merge = dy.esum
+        else:
+            raise NotImplementedError(f'no such merge_strategy :: {merge_strategy}')
+
+        self.f = LSTM(self.pc, num_layers, input_size, forward_size,
                       dropout_ratio, zoneout_ratio, activation, recurrent_activation,
                       kernel_initializer=kernel_initializer, recurrent_initializer=recurrent_initializer,
                       hidden_initializer=hidden_initializer,
                       bias_initializer=bias_initializer, forget_bias_initializer=forget_bias_initializer)
-        self.b = LSTM(self.pc, num_layers, input_size, hidden_size,
+        self.b = LSTM(self.pc, num_layers, input_size, backward_size,
                       dropout_ratio, zoneout_ratio, activation, recurrent_activation,
                       kernel_initializer=kernel_initializer, recurrent_initializer=recurrent_initializer,
                       hidden_initializer=hidden_initializer,
                       bias_initializer=bias_initializer, forget_bias_initializer=forget_bias_initializer)
-
-        self.hidden_size = self.f.hidden_size + self.b.hidden_size
 
     def transduce(self, xs: List[Expression],
                   fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                   bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> List[Expression]:
         fs = self.f.transduce(xs, fhtm1s, fctm1s)
         bs = self.b.transduce(xs[::-1], bhtm1s, bctm1s)[::-1]
-        return [dy.concatenate([f, b]) for f, b in zip(fs, bs)]
+        return [self.merge([f, b]) for f, b in zip(fs, bs)]
 
     def compress(self, xs: List[Expression],
                  fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                  bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> Expression:
         f = self.f.compress(xs, fhtm1s, fctm1s)
         b = self.b.compress(xs[::-1], bhtm1s, bctm1s)
-        return dy.concatenate([f, b])
+        return self.merge([f, b])
 
 
 if __name__ == '__main__':
-    rnn = LSTM(ParameterCollection(), 1, 4, 5)
+    rnn = BiLSTM(ParameterCollection(), 1, 4, 5, merge_strategy='avg')
     dy.renew_cg()
 
     xs = [
         dy.inputVector([1, 2, 3, 4]),
         dy.inputVector([1, 2, 3, 4]),
+        dy.inputVector([1, 2, 3, 4]),
     ]
 
-    s0 = rnn.init_state()
-    print(s0.output().value())
+    for z in rnn.transduce(xs):
+        print(f'z :: {z.dim()} => {z.value()}')
 
-    s1 = s0.add_input(dy.inputVector([1, 2, 3, 4]))
-    print(s1.output().value())
-
-    s2 = s1.add_input(dy.inputVector([1, 2, 3, 4]))
-    print(s2.output().value())
+    y = rnn.compress(xs)
+    print(f'y :: {y.dim()} => {y.value()}')
