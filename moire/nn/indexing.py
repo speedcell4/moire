@@ -1,9 +1,11 @@
-import moire
-from moire import nn, Expression, bernoulli, uniform
+import dynet as dy
+import numpy as np
+
+from moire import Expression, uniform
 
 __all__ = [
     'argmax', 'argmin',
-    'EpsilonArgMax', 'EpsilonArgMin',
+    'epsilon_argmax', 'epsilon_argmin',
 ]
 
 
@@ -15,33 +17,20 @@ def argmin(x: Expression, axis: int = None) -> int:
     return int(x.npvalue().argmin(axis=axis))
 
 
-class EpsilonArgMax(nn.Function):
-    def __init__(self, epsilon: float, axis: int = None):
-        super(EpsilonArgMax, self).__init__()
-        self.epsilon = epsilon
-        self.axis = axis
-
-    def __repr__(self) -> str:
-        return f'<{self.__class__.__name__} : {self.epsilon}>'
-
-    def __call__(self, x: Expression) -> int:
-        if moire.config.train and bernoulli(p=self.epsilon).value():
-            dim, batch_size = x.dim()
-            return int(uniform(low=0, high=dim[0]).value())
-        return argmax(x, self.axis)
+def epsilon_argmax(x: Expression, epsilon: float, axis: int = None) -> int:
+    if np.random.uniform(low=0.0, high=1.0, size=()) < epsilon:
+        dim, batch_size = x.dim()
+        return int(uniform(low=0, high=dim[0]).value())
+    return argmax(x, axis)
 
 
-class EpsilonArgMin(nn.Function):
-    def __init__(self, epsilon: float, axis: int = None):
-        super(EpsilonArgMin, self).__init__()
-        self.epsilon = epsilon
-        self.axis = axis
+def epsilon_argmin(x: Expression, epsilon: float, axis: int = None) -> int:
+    if np.random.uniform(low=0.0, high=1.0, size=()) < epsilon:
+        dim, batch_size = x.dim()
+        return int(uniform(low=0, high=dim[0]).value())
+    return argmin(x, axis)
 
-    def __repr__(self) -> str:
-        return f'<{self.__class__.__name__} : {self.epsilon}>'
 
-    def __call__(self, x: Expression) -> int:
-        if moire.config.train and bernoulli(p=self.epsilon).value():
-            dim, batch_size = x.dim()
-            return int(uniform(low=0, high=dim[0]).value())
-        return argmin(x, self.axis)
+if __name__ == '__main__':
+    x = dy.inputVector([1, 2, 3, 4])
+    print(np.histogram([epsilon_argmax(x, 0.5) for _ in range(10000)], bins=4))
