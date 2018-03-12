@@ -7,15 +7,10 @@ app = aku.App(__file__)
 
 
 @app.register
-def train(
-        device: str = 'CPU',
-        start_epsilon: float = 0.7, gamma: float = 0.8,
-        batch_size: int = 32,
-        replay_start_size: int = 100,
-        target_update_interval: int = 10000,
-        epsilon_decay: float = 0.03,
-        nb_iterations: int = 200000000,
-        epsilon_decay_interval: int = 50000, capacity: int = 100, num_layers: int = 2, hidden_size: int = 100):
+def train(device: str = 'CPU', gamma: float = 0.95, batch_size: int = 32, replay_start_size: int = 500,
+          target_update_interval: int = 100, start_epsilon: float = 0.3, epsilon_decay_interval: int = 50000,
+          epsilon_decay: float = 0.03, nb_iterations: int = 200000000, capacity: int = 10 ** 6, num_layers: int = 2,
+          hidden_size: int = 200):
     launch_moire.launch_moire(device)
 
     import dynet as dy
