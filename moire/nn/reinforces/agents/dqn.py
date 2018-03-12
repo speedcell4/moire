@@ -1,20 +1,19 @@
 import dynet as dy
-from chainerrl.replay_buffer import ReplayBuffer
 
 import moire
 from moire import Expression
 from moire import ParameterCollection
 from moire import nn
 from moire.nn.indexing import argmax, epsilon_argmax
-from moire.nn.reinforces.agents.agent import Agent
-from moire.nn.reinforces.replay_buffer import ReplayUpdater
-from moire.nn.reinforces.replay_buffer import batch_experiences
+from moire.nn.reinforces.agents import Agent
+from moire.nn.reinforces.replay_buffer import ReplayBuffer, ReplayUpdater, batch_experiences
 
 
 class DQN(Agent):
     def __init__(self, q_function: nn.Module, target_q_function: nn.Module, replay_buffer: ReplayBuffer,
                  optimizer: dy.Trainer, gamma: float, batch_size: int, replay_start_size: int, n_times_update,
-                 update_interval: int, target_update_interval: int) -> None:
+                 update_interval: int, target_update_interval: int,
+                 average_q_decay: float = 0.999, average_loss_decay: float = 0.99) -> None:
         self.target_update_interval = target_update_interval
         self.optimizer = optimizer
         self.gamma = gamma
@@ -34,15 +33,23 @@ class DQN(Agent):
         self.last_obs = None
         self.last_action = None
 
-        self.synchronize()
+        self.sync_target_network()
 
-    def synchronize(self):
+        self.average_q = 0
+        self.average_q_decay = average_q_decay
+        self.average_loss = 0
+        self.average_loss_decay = average_loss_decay
+
+    def sync_target_network(self):
         self.target_q_function.copy_from(self.q_function)
         print(f'{self.__class__.__name__} synchronized at iteration :: {self.t}', file=moire.config.stdlog)
 
     def update(self, experiences):
         exp_batch = batch_experiences(experiences)
         loss = self._compute_loss(exp_batch, self.gamma)
+
+        self.average_loss *= self.average_loss_decay
+        self.average_loss += (1 - self.average_loss_decay) * float(loss.value())
 
         loss.backward()
         self.optimizer.update()
@@ -75,16 +82,26 @@ class DQN(Agent):
     def act(self, obs):
         obs = dy.nobackprop(obs)
         action_value = self.q_function(obs)
-        return argmax(action_value)
+        action = argmax(action_value)
+        q = float(dy.pick(action_value, action).value())
+
+        self.average_q *= self.average_q_decay
+        self.average_q += (1 - self.average_q_decay) * q
+
+        return action
 
     def act_and_train(self, obs, reward):
         obs = dy.nobackprop(obs)
         action_value = self.q_function(obs)
         action = epsilon_argmax(action_value, moire.config.epsilon)
+        q = float(dy.pick(action_value, action).value())
+
+        self.average_q *= self.average_q_decay
+        self.average_q += (1 - self.average_q_decay) * q
 
         self.t += 1
         if self.t % self.target_update_interval == 0:
-            self.synchronize()
+            self.sync_target_network()
 
         if self.last_obs is not None:
             assert self.last_action is not None
@@ -141,3 +158,5 @@ if __name__ == '__main__':
         for _ in range(12):
             dqn.act_and_train(dy.inputVector([1, 2, 3]), 0.8)
         dqn.stop_episode_and_train(dy.inputVector([1, 2, 3]), 0.7, True)
+
+        print(f'average_q => {dqn.average_q:.03f}, average_l => {dqn.average_loss:.03f}', file=moire.config.stdlog)

@@ -1,5 +1,5 @@
 class Agent(object):
-    def synchronize(self):
+    def sync_target_network(self):
         raise NotImplementedError
 
     def act(self, obs):

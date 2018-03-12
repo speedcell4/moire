@@ -1,8 +1,10 @@
 import dynet as dy
+from chainerrl.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
 
 __all__ = [
     'batch_experiences',
     'ReplayUpdater',
+    'ReplayBuffer', 'PrioritizedReplayBuffer',
 ]
 
 
