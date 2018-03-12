@@ -9,9 +9,8 @@ app = aku.App(__file__)
 @app.register
 def train(device: str = 'CPU', gamma: float = 0.95, batch_size: int = 32, replay_start_size: int = 500,
           target_update_interval: int = 100, start_epsilon: float = 0.3, n_episodes: int = 200,
-          max_episode_len: int = 200,
-          capacity: int = 10 ** 6, num_layers: int = 3,
-          hidden_size: int = 50, update_interval: int = 1):
+          max_episode_len: int = 2000, capacity: int = 10 ** 6, num_layers: int = 3,
+          hidden_size: int = 50, update_interval: int = 1, n_times_update: int = 1):
     launch_moire.launch_moire(device)
 
     import moire
@@ -31,8 +30,11 @@ def train(device: str = 'CPU', gamma: float = 0.95, batch_size: int = 32, replay
     target_q_function = nn.MLP(ParameterCollection(), num_layers, 4, 2, hidden_size, nonlinear=tanh)
     replay_buffer = ReplayBuffer(capacity)
 
-    agent = DQN(q_function, target_q_function, replay_buffer, optimizer, gamma, batch_size,
-                      replay_start_size, 1, update_interval, target_update_interval)
+    agent = DQN(
+        q_function=q_function, target_q_function=target_q_function,
+        replay_buffer=replay_buffer, optimizer=optimizer, gamma=gamma, batch_size=batch_size,
+        replay_start_size=replay_start_size, n_times_update=n_times_update,
+        update_interval=update_interval, target_update_interval=target_update_interval)
 
     env = gym.make('CartPole-v0')
     for i in range(1, n_episodes + 1):
