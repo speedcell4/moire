@@ -1,5 +1,4 @@
 import aku
-import dynet as dy
 import gym
 
 import launch_moire
@@ -20,6 +19,7 @@ def train(
     launch_moire.launch_moire(device)
 
     import moire
+    import dynet as dy
     from moire import ParameterCollection
     from moire import nn
     from moire.nn.reinforces.agents import DoubleDQN

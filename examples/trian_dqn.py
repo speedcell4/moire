@@ -1,5 +1,4 @@
 import aku
-import dynet as dy
 import gym
 
 import launch_moire
@@ -19,6 +18,7 @@ def train(
         epsilon_decay_interval: int = 50000, capacity: int = 100, num_layers: int = 2, hidden_size: int = 100):
     launch_moire.launch_moire(device)
 
+    import dynet as dy
     import moire
     from moire import ParameterCollection
     from moire import nn
@@ -36,7 +36,7 @@ def train(
     replay_buffer = ReplayBuffer(capacity)
 
     agent = DQN(q_function, target_q_function, replay_buffer, optimizer, gamma, batch_size,
-                      replay_start_size, 1, 5, target_update_interval)
+                replay_start_size, 1, 5, target_update_interval)
 
     env = gym.make('CartPole-v0')
     for i_episode in range(1, nb_iterations):
@@ -52,7 +52,8 @@ def train(
             moire.config.epsilon -= epsilon_decay
             print(f'epsilon => {moire.config.epsilon:.03f}', file=moire.config.stdlog)
 
-        print(f'{i_episode:010d} :: average_q => {agent.average_q:.03f}, average_l => {agent.average_loss:.03f}', file=moire.config.stdlog)
+        print(f'{i_episode:010d} :: average_q => {agent.average_q:.03f}, average_l => {agent.average_loss:.03f}',
+              file=moire.config.stdlog)
 
 
 if __name__ == '__main__':
