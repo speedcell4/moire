@@ -16,6 +16,10 @@ class Function(object):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}'
 
+    @property
+    def gain(self) -> float:
+        raise AttributeError
+
     def copy_from(self, other: 'Function'):
         pass
 
