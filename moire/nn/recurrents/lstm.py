@@ -2,6 +2,7 @@ import itertools
 from typing import Tuple, List
 
 import dynet as dy
+import numpy as np
 
 import moire
 from moire import nn, Expression, ParameterCollection
@@ -9,8 +10,6 @@ from moire.nn.inits import Uniform, GlorotNormal, Orthogonal, Zero, One
 from moire.nn.sigmoids import sigmoid
 from moire.nn.trigonometry import tanh
 
-
-# TODO move to hard_sigmoid ?
 
 class LSTMCell(nn.Module):
     def __init__(self, pc: ParameterCollection,
@@ -177,7 +176,7 @@ class BiLSTM(nn.Module):
                  kernel_initializer=GlorotNormal(), recurrent_initializer=Orthogonal(),
                  hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()) -> None:
         super(BiLSTM, self).__init__(pc)
-        assert merge_strategy in ['cat', 'avg', 'sum']
+        assert merge_strategy in ['cat', 'avg', 'sum', 'max']
 
         self.num_layers = num_layers
         self.input_size = input_size
@@ -189,16 +188,17 @@ class BiLSTM(nn.Module):
 
         if merge_strategy == 'cat':
             forward_size = output_size // 2
-            backward_size = output_size - output_size // 2
+            backward_size = output_size - forward_size
             self.merge = dy.concatenate
         elif merge_strategy == 'avg':
-            forward_size = output_size
-            backward_size = output_size
+            forward_size = backward_size = output_size
             self.merge = dy.average
         elif merge_strategy == 'sum':
-            forward_size = output_size
-            backward_size = output_size
+            forward_size = backward_size = output_size
             self.merge = dy.esum
+        elif merge_strategy == 'max':
+            forward_size = backward_size = output_size
+            self.merge = dy.emax
         else:
             raise NotImplementedError(f'no such merge_strategy :: {merge_strategy}')
 
@@ -223,13 +223,13 @@ class BiLSTM(nn.Module):
     def compress(self, xs: List[Expression],
                  fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                  bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> Expression:
-        f = self.f.compress(xs, fhtm1s, fctm1s)
-        b = self.b.compress(xs[::-1], bhtm1s, bctm1s)
+        f = self.f.transduce(xs, fhtm1s, fctm1s)[-1]
+        b = self.b.transduce(xs[::-1], bhtm1s, bctm1s)[::-1][-1]
         return self.merge([f, b])
 
 
 if __name__ == '__main__':
-    rnn = BiLSTM(ParameterCollection(), 1, 4, 5, merge_strategy='avg')
+    rnn = BiLSTM(ParameterCollection(), 1, 4, 5, merge_strategy='sum')
     dy.renew_cg()
 
     xs = [
@@ -238,8 +238,10 @@ if __name__ == '__main__':
         dy.inputVector([1, 2, 3, 4]),
     ]
 
+    y = rnn.compress(xs)
+    print(f'y :: {y.dim()} => {y.value()}')
+
     for z in rnn.transduce(xs):
         print(f'z :: {z.dim()} => {z.value()}')
 
-    y = rnn.compress(xs)
-    print(f'y :: {y.dim()} => {y.value()}')
+    assert np.allclose(y.npvalue(), rnn.transduce(xs)[-1].npvalue())
