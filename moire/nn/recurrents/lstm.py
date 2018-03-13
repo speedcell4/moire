@@ -2,6 +2,7 @@ from typing import List
 
 import dynet as dy
 
+import moire
 from moire import Expression, ParameterCollection
 from moire import nn
 from moire.nn.inits import GlorotNormal, Orthogonal, Uniform, Zero, One
@@ -25,16 +26,18 @@ class LSTM(nn.Module):
         self.zoneout_ratio = zoneout_ratio
         self.rnn = dy.LSTMBuilder(num_layers, input_size, hidden_size, self.pc)
 
+        self.x0 = self.add_param((input_size,), hidden_initializer)
+
     def init_state(self):
-        return self.rnn.initial_state()
+        return self.rnn.initial_state().add_input(self.x0.expr(moire.config.train))
 
     def transduce(self, xs: List[Expression]) -> List[Expression]:
-        return self.rnn.initial_state().transduce(xs)
+        return self.init_state().transduce(xs)
 
     def compress(self, xs: List[Expression]) -> Expression:
         if len(xs) == 0:
-            return self.rnn.initial_state().output()
-        return self.rnn.initial_state().transduce(xs)[-1]
+            return self.init_state().output()
+        return self.init_state().transduce(xs)[-1]
 
 
 class BiLSTM(nn.Module):
@@ -93,8 +96,8 @@ class BiLSTM(nn.Module):
                  fhtm1s: List[Expression] = None, fctm1s: List[Expression] = None,
                  bhtm1s: List[Expression] = None, bctm1s: List[Expression] = None) -> Expression:
         if len(xs) == 0:
-            f = self.f.init_state().hts[-1]
-            b = self.b.init_state().hts[-1]
+            f = self.f.init_state().output()
+            b = self.b.init_state().output()
         else:
             f = self.f.transduce(xs)[-1]
             b = self.b.transduce(xs[::-1])[0]
@@ -115,3 +118,6 @@ if __name__ == '__main__':
 
     for z in rnn.transduce(xs):
         print(f'z :: {z.dim()} => {z.value()}')
+
+    w = rnn.compress([])
+    print(f'w :: {w.dim()} => {w.value()}')
