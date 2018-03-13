@@ -18,6 +18,11 @@ class LSTM(nn.Module):
                  hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()):
         super().__init__(pc)
 
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.dropout_ratio = dropout_ratio
+        self.zoneout_ratio = zoneout_ratio
         self.rnn = dy.LSTMBuilder(num_layers, input_size, hidden_size, self.pc)
 
     def init_state(self):
@@ -107,6 +112,6 @@ if __name__ == '__main__':
 
     y = rnn.compress(xs)
     print(f'y :: {y.dim()} => {y.value()}')
-    
+
     for z in rnn.transduce(xs):
         print(f'z :: {z.dim()} => {z.value()}')
