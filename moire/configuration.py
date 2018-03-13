@@ -24,13 +24,15 @@ config = Configuration(
     stdlog=sys.stdout,
     stdout=sys.stdout,
     stderr=sys.stderr,
+
+    chapter='train',
 )
 
 
 @contextlib.contextmanager
 def using_config(**kwargs):
     global config
-    old_config = copy.deepcopy(copy)
+    old_config = copy.copy(copy)
 
     for name, value in kwargs.items():
         setattr(config, name, value)
