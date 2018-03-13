@@ -1,5 +1,4 @@
 import contextlib
-import copy
 import sys
 from pathlib import Path
 from typing import Optional
@@ -17,9 +16,6 @@ class Configuration(dict):
 
     def __setattr__(self, key: str, value):
         return super(Configuration, self).__setitem__(key, value)
-
-    def __repr__(self) -> str:
-        return f'<{self.__class__.__name__}>'
 
 
 config = Configuration(
@@ -39,10 +35,8 @@ config = Configuration(
 @contextlib.contextmanager
 def using_config(**kwargs):
     global config
-    old_config = {**config, **kwargs}
-
-    for name, value in kwargs.items():
-        setattr(config, name, value)
+    old_config = config
+    config = Configuration(**{**old_config, **kwargs})
 
     try:
         yield
