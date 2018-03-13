@@ -6,6 +6,7 @@ from moire import Expression, uniform
 __all__ = [
     'argmax', 'argmin',
     'epsilon_argmax', 'epsilon_argmin',
+    'gumbel_argmax', 'gumbel_argmin',
 ]
 
 
@@ -31,6 +32,19 @@ def epsilon_argmin(x: Expression, epsilon: float, axis: int = None) -> int:
     return argmin(x, axis)
 
 
+def gumbel_argmax(prob: Expression, loc: float = 0.0, scale: float = 1.0, axis: int = None) -> int:
+    shape, batch_size = prob.dim()
+    a = dy.inputVector(np.random.gumbel(loc=loc, scale=scale, size=shape))
+    return int(np.argmax((dy.log(prob) + a).value(), axis=axis).astype(np.int32, copy=False))
+
+
+def gumbel_argmin(prob: Expression, loc: float = 0.0, scale: float = 1.0, axis: int = None) -> int:
+    shape, batch_size = prob.dim()
+    a = dy.inputVector(np.random.gumbel(loc=loc, scale=scale, size=shape))
+    return int(np.argmin((dy.log(prob) + a).value(), axis=axis).astype(np.int32, copy=False))
+
+
 if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
-    print(np.histogram([epsilon_argmax(x, 0.5) for _ in range(10000)], bins=4))
+    a = np.array([gumbel_argmin(dy.softmax(x)) for _ in range(1000)])
+    print(np.histogram(a, bins=4))
