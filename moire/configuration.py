@@ -35,8 +35,8 @@ config = Configuration(
 @contextlib.contextmanager
 def using_config(**kwargs):
     global config
-    old_config = config
-    config = Configuration(**{**old_config, **kwargs})
+    old_config = Configuration(**config)
+    config = Configuration(**{**config, **kwargs})
 
     try:
         yield
@@ -59,3 +59,10 @@ def redirect_stream(name: str, path: Optional[Path], mode: str = 'r', encoding: 
                     yield
                 finally:
                     pass
+
+
+if __name__ == '__main__':
+    print(config.train)
+    with using_config(train=False):
+        print(config.train)
+    print(config.train)
