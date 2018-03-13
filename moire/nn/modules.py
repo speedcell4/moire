@@ -82,6 +82,23 @@ class Module(object):
         for target, source in zip(self.lookup_parameters, other.lookup_parameters):
             target.set_value(source.as_array())
 
+    def soft_copy_from(self, other: 'Module', tau: float) -> None:
+        for target, source in zip(self.functions, other.functions):
+            target.copy_from(source)
+        for target, source in zip(self.parameters, other.parameters):
+            target.set_value(target.as_array() * (1 - tau) + source.as_array() * tau)
+        for target, source in zip(self.lookup_parameters, other.lookup_parameters):
+            target.set_value(target.as_array() * (1 - tau) + source.as_array() * tau)
+
+    def scale_gradient(self, scale: float):
+        for p in self.parameters:
+            p.scale_gradient(scale)
+        for p in self.lookup_parameters:
+            p.scale_gradient(scale)
+
+    def zerograds(self) -> None:
+        self.scale_gradient(0.0)
+
     def __setattr__(self, key, value):
         if isinstance(value, Module):
             self._modules[key] = value
