@@ -5,11 +5,18 @@ from pathlib import Path
 from typing import Optional
 
 
-class Configuration(object):
+class Configuration(dict):
     def __init__(self, **kwargs):
-        super(Configuration, self).__init__()
-        for name, value in kwargs.items():
-            setattr(self, name, value)
+        super(Configuration, self).__init__(**kwargs)
+
+    def __getattr__(self, key: str):
+        return super(Configuration, self).__getitem__(key)
+
+    def __delattr__(self, key: str):
+        return super(Configuration, self).__delitem__(key)
+
+    def __setattr__(self, key: str, value):
+        return super(Configuration, self).__setitem__(key, value)
 
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}>'
@@ -32,7 +39,7 @@ config = Configuration(
 @contextlib.contextmanager
 def using_config(**kwargs):
     global config
-    old_config = copy.copy(copy)
+    old_config = {**config, **kwargs}
 
     for name, value in kwargs.items():
         setattr(config, name, value)
