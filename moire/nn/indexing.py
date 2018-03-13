@@ -1,7 +1,7 @@
 import dynet as dy
 import numpy as np
 
-from moire import Expression, uniform
+from moire import Expression
 
 __all__ = [
     'argmax', 'argmin',
@@ -21,14 +21,14 @@ def argmin(x: Expression, axis: int = None) -> int:
 def epsilon_argmax(x: Expression, epsilon: float, axis: int = None) -> int:
     if np.random.uniform(low=0.0, high=1.0, size=()) < epsilon:
         dim, batch_size = x.dim()
-        return int(uniform(low=0, high=dim[0]).value())
+        return int(np.random.uniform(low=0, high=dim[0], size=()))
     return argmax(x, axis)
 
 
 def epsilon_argmin(x: Expression, epsilon: float, axis: int = None) -> int:
     if np.random.uniform(low=0.0, high=1.0, size=()) < epsilon:
         dim, batch_size = x.dim()
-        return int(uniform(low=0, high=dim[0]).value())
+        return int(np.random.uniform(low=0, high=dim[0], size=()))
     return argmin(x, axis)
 
 
@@ -46,5 +46,6 @@ def gumbel_argmin(prob: Expression, loc: float = 0.0, scale: float = 1.0, axis: 
 
 if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
-    a = np.array([gumbel_argmin(dy.softmax(x)) for _ in range(1000)])
+    prob = dy.softmax(x)
+    a = np.array([gumbel_argmax(prob) for _ in range(1000)])
     print(np.histogram(a, bins=4))
