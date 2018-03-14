@@ -4,16 +4,17 @@ import dynet as dy
 import numpy as np
 
 import moire
-from moire.array import full_like
 from moire import ParameterCollection, nn, Expression, where
+from moire.array import full_like
 
 __all__ = [
-    'sigmoid', 'hard_sigmoid',
-    'log_softmax',
+    'sigmoid', 'softsign', 'hard_sigmoid',
+    'softmax', 'log_softmax',
     'MaskedLogSoftmax', 'RestrictedLogSoftmax',
 ]
 
 sigmoid = dy.logistic
+softsign = dy.softsign
 
 
 def clip(x: Expression, a_min: float, a_max: float) -> Expression:
@@ -22,8 +23,12 @@ def clip(x: Expression, a_min: float, a_max: float) -> Expression:
     return dy.bmax(a_min, dy.bmin(a_max, x))
 
 
-def hard_sigmoid(x: Expression) -> Expression:
-    return clip(x * 0.2 + 0.5, 0.0, 1.0)
+def hard_sigmoid(x: Expression, slope: float = 0.2, offset: float = 0.5,
+                 a_min: float = 0.0, a_max: float = 1.0) -> Expression:
+    return clip(x * slope + offset, a_min, a_max)
+
+
+softmax = dy.softmax
 
 
 def log_softmax(x: Expression, restrict=None) -> Expression:
