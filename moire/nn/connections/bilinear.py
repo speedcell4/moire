@@ -1,33 +1,64 @@
+import warnings
+
 import dynet as dy
 
 import moire
-from moire import ParameterCollection, Expression
+from moire import Expression, ParameterCollection
 from moire import nn
-from moire.nn.inits import Zero, GlorotUniform
+from moire.nn.inits import GlorotUniform, Zero
 
 
 class BiLinear(nn.Module):
     def __init__(self, pc: ParameterCollection,
-                 in1_feature: int, in2_feature: int, out_feature: int, bias: bool = True,
+                 in1_feature: int, in2_feature: int, out_feature: int,
+                 use_u: bool = True, use_v: bool = True, use_bias: bool = True,
                  weight_initializer=GlorotUniform(), bias_initializer=Zero()) -> None:
         super(BiLinear, self).__init__(pc)
+        warnings.warn(f'{self.__class__.__name__} has not been tested on GPU', FutureWarning)
 
         self.in1_feature = in1_feature
         self.in2_feature = in2_feature
         self.out_feature = out_feature
-        self.bias = bias
 
-        self.weight = self.add_param((in1_feature * out_feature, in2_feature), weight_initializer)
-        if bias:
+        self.use_u = use_u
+        self.use_v = use_v
+        self.use_bias = use_bias
+
+        self.W = self.add_param((out_feature, in2_feature, in1_feature), weight_initializer)
+        if use_u:
+            self.U = self.add_param((out_feature, in1_feature), weight_initializer)
+        if use_v:
+            self.V = self.add_param((out_feature, in2_feature), weight_initializer)
+        if use_bias:
             self.bias = self.add_param((out_feature,), bias_initializer)
 
     def __repr__(self):
         return f'{self.__class__.__name__} ({self.in1_feature}, {self.in2_feature} -> {self.out_feature})'
 
     def __call__(self, x1: Expression, x2: Expression) -> Expression:
-        weight = self.weight.expr(moire.config.train)
-        u = dy.transpose(dy.reshape(weight * x2, (self.in1_feature, self.out_feature)))
-        if self.bias:
-            bias = self.bias.expr(moire.config.train)
-            return dy.affine_transform([bias, u, x1])
-        return u * x1
+        W = self.W.expr(moire.config.train)
+        if self.use_bias:
+            b = self.bias.expr(moire.config.train)
+            xs = [dy.contract3d_1d_1d_bias(W, x1, x2, b)]
+        else:
+            xs = [dy.contract3d_1d_1d(W, x1, x2)]
+        if self.use_u:
+            u = self.U.expr(moire.config.train)
+            xs.extend([u, x1])
+        if self.use_v:
+            v = self.V.expr(moire.config.train)
+            xs.extend([v, x2])
+        return dy.affine_transform(xs)
+
+
+if __name__ == '__main__':
+    for use_u in [True, False]:
+        for use_v in [True, False]:
+            for use_bias in [True, False]:
+                fc = BiLinear(ParameterCollection(), 3, 4, 5, use_v=use_v, use_u=use_u, use_bias=use_bias)
+                dy.renew_cg()
+
+                x1 = dy.inputVector([1, 2, 3])
+                x2 = dy.inputVector([1, 2, 3, 4])
+                y = fc.__call__(x1, x2)
+                print(f'y :: {y.dim()} => {y.value()}')
