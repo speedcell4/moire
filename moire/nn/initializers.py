@@ -86,9 +86,8 @@ class Normal(Initializer):
         self.mean = mean
         self.stddev = stddev
 
-    def __call__(self, shape):
-        array = np.random.normal(size=shape, loc=self.mean, scale=self.stddev).astype(self.dtype)
-        return dy.NumpyInitializer(array)
+    def generate_array(self, shape):
+        return np.random.normal(size=shape, loc=self.mean, scale=self.stddev).astype(self.dtype)
 
 
 class Uniform(Initializer):
@@ -97,9 +96,8 @@ class Uniform(Initializer):
         self.minval = minval
         self.maxval = maxval
 
-    def __call__(self, shape):
-        array = np.random.uniform(size=shape, low=self.minval, high=self.maxval).astype(self.dtype)
-        return dy.NumpyInitializer(array)
+    def generate_array(self, shape):
+        return np.random.uniform(size=shape, low=self.minval, high=self.maxval).astype(self.dtype)
 
 
 class TruncatedNormal(Initializer):
@@ -108,10 +106,10 @@ class TruncatedNormal(Initializer):
         self.mean = mean
         self.stddev = stddev
 
-    def __call__(self, shape):
+    def generate_array(self, shape):
         array = np.random.normal(size=shape, loc=self.mean, scale=self.stddev).astype(self.dtype)
         np.clip(array, self.mean - 2 * self.stddev, self.mean + 2 * self.stddev, array)
-        return dy.NumpyInitializer(array)
+        return array
 
 
 # TODO VarianceScaling
