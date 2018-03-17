@@ -1,17 +1,21 @@
 import itertools
-from typing import Tuple, List
+from typing import List, Tuple
 
 import dynet as dy
-import numpy as np
 
 import moire
-from moire import nn, Expression, ParameterCollection
-from moire.nn.inits import Uniform, GlorotNormal, Orthogonal, Zero, One
+from moire import Expression, ParameterCollection, nn
+from moire.nn.initializers import ConcatenatedInitializer, GlorotNormal, One, Orthogonal, Uniform, Zero
 from moire.nn.sigmoids import sigmoid
 from moire.nn.trigonometry import tanh
 
 
 class LSTMCell(nn.Module):
+    G_I: int = 0
+    G_F: int = 1
+    G_G: int = 2
+    G_O: int = 3
+
     def __init__(self, pc: ParameterCollection,
                  input_size: int, hidden_size: int,
                  dropout_ratio: float = None, zoneout_ratio: float = None,
@@ -20,51 +24,39 @@ class LSTMCell(nn.Module):
                  hidden_initializer=Uniform(), bias_initializer=Zero(), forget_bias_initializer=One()) -> None:
         super(LSTMCell, self).__init__(pc)
 
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.dropout_ratio = dropout_ratio
+        self.zoneout_ratio = zoneout_ratio
+
         self.h0 = self.add_param((hidden_size,), hidden_initializer)
         self.c0 = self.add_param((hidden_size,), hidden_initializer)
 
-        self.Wi = self.add_param((hidden_size, input_size), kernel_initializer)
-        self.Wf = self.add_param((hidden_size, input_size), kernel_initializer)
-        self.Wg = self.add_param((hidden_size, input_size), kernel_initializer)
-        self.Wo = self.add_param((hidden_size, input_size), kernel_initializer)
+        kernel_initializer = ConcatenatedInitializer(
+            kernel_initializer, kernel_initializer, kernel_initializer, kernel_initializer, axis=0)
+        self.W = self.add_param((4 * hidden_size, input_size), kernel_initializer)
 
-        self.Ui = self.add_param((hidden_size, hidden_size), recurrent_initializer)
-        self.Uf = self.add_param((hidden_size, hidden_size), recurrent_initializer)
-        self.Ug = self.add_param((hidden_size, hidden_size), recurrent_initializer)
-        self.Uo = self.add_param((hidden_size, hidden_size), recurrent_initializer)
+        recurrent_initializer = ConcatenatedInitializer(
+            recurrent_initializer, recurrent_initializer, recurrent_initializer, recurrent_initializer, axis=0)
+        self.U = self.add_param((4 * hidden_size, hidden_size), recurrent_initializer)
 
-        self.bi = self.add_param((hidden_size,), bias_initializer)
-        self.bf = self.add_param((hidden_size,), forget_bias_initializer)
-        self.bg = self.add_param((hidden_size,), bias_initializer)
-        self.bo = self.add_param((hidden_size,), bias_initializer)
+        bias_initializer = ConcatenatedInitializer(
+            bias_initializer, forget_bias_initializer, bias_initializer, bias_initializer, axis=0)
+        self.b = self.add_param((4 * hidden_size,), bias_initializer)
 
         self.fi = recurrent_activation
         self.ff = recurrent_activation
         self.fg = activation
         self.fo = recurrent_activation
 
-        self.dropout_ratio = dropout_ratio
-        self.zoneout_ratio = zoneout_ratio
-
         self.dropout = nn.Dropout(dropout_ratio)
         self.zoneout = nn.Zoneout(zoneout_ratio)
 
     def __call__(self, x: Expression,
                  htm1: Expression = None, ctm1: Expression = None) -> Tuple[Expression, Expression]:
-        Wi = self.Wi.expr(moire.config.train)
-        Wf = self.Wf.expr(moire.config.train)
-        Wg = self.Wg.expr(moire.config.train)
-        Wo = self.Wo.expr(moire.config.train)
-
-        Ui = self.Ui.expr(moire.config.train)
-        Uf = self.Uf.expr(moire.config.train)
-        Ug = self.Ug.expr(moire.config.train)
-        Uo = self.Uo.expr(moire.config.train)
-
-        bi = self.bi.expr(moire.config.train)
-        bf = self.bf.expr(moire.config.train)
-        bg = self.bg.expr(moire.config.train)
-        bo = self.bo.expr(moire.config.train)
+        W = self.W.expr(moire.config.train)
+        U = self.U.expr(moire.config.train)
+        b = self.b.expr(moire.config.train)
 
         x = self.dropout(x)
 
@@ -73,10 +65,11 @@ class LSTMCell(nn.Module):
         if ctm1 is None:
             ctm1 = self.c0.expr(moire.config.train)
 
-        i = self.fi(dy.affine_transform([bi, Wi, x, Ui, htm1]))
-        f = self.ff(dy.affine_transform([bf, Wf, x, Uf, htm1]))
-        g = self.fg(dy.affine_transform([bg, Wg, x, Ug, htm1]))
-        o = self.fo(dy.affine_transform([bo, Wo, x, Uo, htm1]))
+        y = dy.reshape(dy.affine_transform([b, W, x, U, ctm1]), (4, self.hidden_size))
+        i = self.fi(y[self.G_I])
+        f = self.ff(y[self.G_F])
+        g = self.fg(y[self.G_G])
+        o = self.fo(y[self.G_O])
 
         ct = dy.cmult(f, ctm1) + dy.cmult(i, g)
         ht = dy.cmult(o, self.fg(ctm1))
@@ -233,22 +226,12 @@ class BiLSTM(nn.Module):
 
 
 if __name__ == '__main__':
-    rnn = BiLSTM(ParameterCollection(), 1, 4, 5, merge_strategy='cat')
+    cell = LSTMCell(ParameterCollection(), 4, 5)
+
     dy.renew_cg()
 
-    xs = [
-        dy.inputVector([1, 2, 3, 4]),
-        dy.inputVector([1, 2, 3, 4]),
-        dy.inputVector([1, 2, 3, 4]),
-    ]
+    x = dy.inputVector([1, 2, 3, 4])
+    h, c = cell.__call__(x)
 
-    y = rnn.compress(xs)
-    print(f'y :: {y.dim()} => {y.value()}')
-
-    for z in rnn.transduce(xs):
-        print(f'z :: {z.dim()} => {z.value()}')
-
-    assert np.allclose(y.npvalue(), rnn.transduce(xs)[-1].npvalue())
-
-    w = rnn.compress([])
-    print(f'w :: {w.dim()} => {w.value()}')
+    print(f'h :: {h.dim()} => {h.value()}')
+    print(f'c :: {c.dim()} => {c.value()}')

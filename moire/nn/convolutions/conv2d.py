@@ -5,7 +5,7 @@ from dynet import Model
 
 import moire
 from moire import nn, Expression, ParameterCollection, normal
-from moire.nn.inits import Xavier, Zero
+from moire.nn.initializers import Xavier, Zero
 
 
 class Conv2d(nn.Module):

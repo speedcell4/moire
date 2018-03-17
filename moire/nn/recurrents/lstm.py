@@ -5,7 +5,7 @@ import dynet as dy
 import moire
 from moire import Expression, ParameterCollection
 from moire import nn
-from moire.nn.inits import GlorotNormal, Orthogonal, Uniform, Zero, One
+from moire.nn.initializers import GlorotNormal, Orthogonal, Uniform, Zero, One
 from moire.nn.sigmoids import sigmoid
 from moire.nn.trigonometry import tanh
 

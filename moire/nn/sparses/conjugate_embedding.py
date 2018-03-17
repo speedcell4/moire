@@ -2,7 +2,7 @@ import dynet as dy
 
 import moire
 from moire import nn, Expression, ParameterCollection
-from moire.nn.inits import Uniform
+from moire.nn.initializers import Uniform
 
 __all__ = [
     'ConjugateEmbedding',

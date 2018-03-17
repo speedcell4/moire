@@ -1,10 +1,11 @@
+import warnings
+
 import dynet as dy
 import numpy as np
-from chainer import initializers
+import chainer
 
 from moire.nn.sigmoids import sigmoid
 from moire.nn.thresholds import linear, relu
-import warnings
 from moire.nn.trigonometry import tanh
 
 # http://pytorch.org/docs/0.3.1/nn.html#torch.nn.init.calculate_gain
@@ -32,6 +33,9 @@ class Initializer(object):
         self.dtype = dtype
 
     def __call__(self, shape):
+        return dy.NumpyInitializer(self.generate_array(shape))
+
+    def generate_array(self, shape):
         raise NotImplementedError
 
 
@@ -40,25 +44,40 @@ class ChainerInitializer(Initializer):
         super().__init__(dtype)
         self.initializer = initializer
 
-    def __call__(self, shape):
-        array = initializers.generate_array(
+    def generate_array(self, shape):
+        return chainer.initializers.generate_array(
             self.initializer, shape=shape, xp=np)
-        return dy.NumpyInitializer(array)
+
+
+class ConcatenatedInitializer(Initializer):
+    def __init__(self, *initializers, axis: int) -> None:
+        assert all(init.dtype == initializers[0].dtype for init in initializers)
+        super().__init__(initializers[0].dtype)
+
+        self.axis = axis
+        self.initializers = initializers
+        self.nb_initializers = len(initializers)
+
+    def generate_array(self, shape):
+        shape = list(shape)
+        shape[self.axis] //= self.nb_initializers
+        return np.concatenate(
+            [init.generate_array(shape) for init in self.initializers], axis=self.axis)
 
 
 class Zero(ChainerInitializer):
     def __init__(self, dtype=np.float) -> None:
-        super().__init__(initializers.Zero(dtype=dtype), dtype)
+        super().__init__(chainer.initializers.Zero(dtype=dtype), dtype)
 
 
 class One(ChainerInitializer):
     def __init__(self, dtype=np.float) -> None:
-        super().__init__(initializers.One(dtype=dtype), dtype)
+        super().__init__(chainer.initializers.One(dtype=dtype), dtype)
 
 
 class Constant(ChainerInitializer):
     def __init__(self, fill_value: float, dtype=np.float) -> None:
-        super().__init__(initializers.Constant(fill_value=fill_value, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.Constant(fill_value=fill_value, dtype=dtype), dtype)
 
 
 class Normal(Initializer):
@@ -99,27 +118,27 @@ class TruncatedNormal(Initializer):
 
 class Orthogonal(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.Orthogonal(scale=gain, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.Orthogonal(scale=gain, dtype=dtype), dtype)
 
 
 class Identity(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super(Identity, self).__init__(initializers.Identity(scale=gain, dtype=dtype), dtype)
+        super(Identity, self).__init__(chainer.initializers.Identity(scale=gain, dtype=dtype), dtype)
 
 
 class LecunUniform(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.LeCunUniform(scale=gain, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.LeCunUniform(scale=gain, dtype=dtype), dtype)
 
 
 class LecunNormal(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.LeCunNormal(scale=gain, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.LeCunNormal(scale=gain, dtype=dtype), dtype)
 
 
 class GlorotUniform(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.GlorotUniform(scale=gain, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.GlorotUniform(scale=gain, dtype=dtype), dtype)
 
 
 Xavier = GlorotUniform
@@ -127,23 +146,14 @@ Xavier = GlorotUniform
 
 class GlorotNormal(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.GlorotNormal(scale=gain, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.GlorotNormal(scale=gain, dtype=dtype), dtype)
 
 
 class HeUniform(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.HeUniform(scale=gain, dtype=dtype), dtype)
+        super().__init__(chainer.initializers.HeUniform(scale=gain, dtype=dtype), dtype)
 
 
 class HeNormal(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
-        super().__init__(initializers.HeNormal(scale=gain, dtype=dtype), dtype)
-
-
-if __name__ == '__main__':
-    from moire import Expression, ParameterCollection
-
-    pc: dy.Model = ParameterCollection()
-    w = pc.add_parameters((10, 10), GlorotNormal()((10, 10)))
-
-    print(w.as_array())
+        super().__init__(chainer.initializers.HeNormal(scale=gain, dtype=dtype), dtype)

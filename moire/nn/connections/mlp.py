@@ -3,7 +3,7 @@ import dynet as dy
 from moire import ParameterCollection, Activation, Expression
 from moire import nn
 from moire.nn.connections.linear import Linear
-from moire.nn.inits import GlorotUniform, Zero, calculate_gain
+from moire.nn.initializers import GlorotUniform, Zero, calculate_gain
 from moire.nn.thresholds import LeakyRelu
 from moire.nn.utils import compute_hidden_size
 

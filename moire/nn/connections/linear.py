@@ -2,7 +2,7 @@ import dynet as dy
 
 import moire
 from moire import nn, ParameterCollection, Expression
-from moire.nn.inits import GlorotUniform, Zero
+from moire.nn.initializers import GlorotUniform, Zero
 
 
 class Linear(nn.Module):

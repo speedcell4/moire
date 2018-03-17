@@ -91,6 +91,9 @@ class DQN(Agent):
         return action
 
     def act_and_train(self, obs, reward):
+        if moire.config.debug:
+            print(f'act_and_train :: {obs} => {reward}')
+
         obs = dy.nobackprop(obs)
         action_value = self.q_function(obs)
         action = epsilon_argmax(action_value, moire.config.epsilon)
@@ -125,6 +128,9 @@ class DQN(Agent):
     def stop_episode_and_train(self, obs, reward: float, done: bool):
         assert self.last_obs is not None
         assert self.last_action is not None
+
+        if moire.config.debug:
+            print(f'stop_episode_and_train :: {obs} => {reward}, {done}')
 
         self.replay_buffer.append(
             state=self.last_obs,

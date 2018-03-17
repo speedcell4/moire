@@ -106,11 +106,12 @@ class REINFORCE(Agent):
         # When self.batch_size is future.types.newint.newint, dividing a
         # Variable with it will raise an error, so it is manually converted to
         # float here.
-        dy.average(losses).backward()
+        if len(losses)>0:
+            dy.average(losses).backward()
+            self.n_backward += 1
         self.reward_sequences = [[]]
         self.obs_sequences = [[]]
         self.action_sequences = [[]]
-        self.n_backward += 1
 
     def batch_update(self):
         assert len(self.reward_sequences) == self.batch_size
