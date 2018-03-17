@@ -49,16 +49,3 @@ class BiLinear(nn.Module):
             v = self.V.expr(moire.config.train)
             xs.extend([v, x2])
         return dy.affine_transform(xs)
-
-
-if __name__ == '__main__':
-    for use_u in [True, False]:
-        for use_v in [True, False]:
-            for use_bias in [True, False]:
-                fc = BiLinear(ParameterCollection(), 3, 4, 5, use_v=use_v, use_u=use_u, use_bias=use_bias)
-                dy.renew_cg()
-
-                x1 = dy.inputVector([1, 2, 3])
-                x2 = dy.inputVector([1, 2, 3, 4])
-                y = fc.__call__(x1, x2)
-                print(f'y :: {y.dim()} => {y.value()}')
