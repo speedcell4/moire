@@ -7,6 +7,7 @@ from moire import Expression
 __all__ = [
     'zeros', 'ones', 'full', 'normal', 'bernoulli', 'uniform', 'gumbel',
     'zeros_like', 'ones_like', 'full_like', 'normal_like', 'bernoulli_like', 'uniform_like', 'gumbel_like',
+    'eye', 'diagonal',
     'where',
 ]
 
@@ -29,6 +30,15 @@ def ones(*dim, batch_size: int = 1) -> Expression:
 def ones_like(x: Expression) -> Expression:
     dim, batch_size = x.dim()
     return ones(*dim, batch_size=batch_size)
+
+
+def eye(N: int, M: int = None, k: int = 0) -> Expression:
+    return dy.inputTensor(np.eye(N, M, k))
+
+
+def diagonal(x: Expression) -> Expression:
+    (dim0, dim1), batch_size = x.dim()
+    return dy.cmult(x, eye(dim0, dim1))
 
 
 def full(*dim, value, batch_size: int = 1) -> Expression:
@@ -83,3 +93,11 @@ def gumbel_like(x: Expression, mu: float = 0.0, beta: float = 1.0) -> Expression
 
 def where(cond: Expression, x: Expression, y: Expression) -> Expression:
     return dy.cmult(cond, x) + dy.cmult(1.0 - cond, y)
+
+
+if __name__ == '__main__':
+    a = dy.inputTensor([[1, 2, 3], [2, 3, 4], ])
+    print(f'a :: {a.dim()} => {a.value()}')
+
+    b = diagonal(a)
+    print(f'b :: {b.dim()} => {b.value()}')
