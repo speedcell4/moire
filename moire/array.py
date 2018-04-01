@@ -1,5 +1,7 @@
 import dynet as dy
+import numpy as np
 
+import moire
 from moire import Expression
 
 __all__ = [
@@ -10,74 +12,74 @@ __all__ = [
 
 
 def zeros(*dim, batch_size: int = 1) -> Expression:
-    return dy.zeros(dim, batch_size=batch_size)
+    a = np.zeros((*dim, batch_size), dtype=np.float32)
+    return dy.inputTensor(a, batched=True, device=moire.config.device)
 
 
 def zeros_like(x: Expression) -> Expression:
     dim, batch_size = x.dim()
-    return dy.zeros(dim, batch_size=batch_size)
+    return zeros(*dim, batch_size=batch_size)
 
 
 def ones(*dim, batch_size: int = 1) -> Expression:
-    return dy.ones(dim, batch_size=batch_size)
+    a = np.ones((*dim, batch_size), dtype=np.float32)
+    return dy.inputTensor(a, batched=True, device=moire.config.device)
 
 
 def ones_like(x: Expression) -> Expression:
     dim, batch_size = x.dim()
-    return dy.ones(dim, batch_size=batch_size)
+    return ones(*dim, batch_size=batch_size)
 
 
 def full(*dim, value, batch_size: int = 1) -> Expression:
-    return dy.constant(dim, value, batch_size=batch_size)
+    a = np.full((*dim, batch_size), fill_value=value, dtype=np.float32)
+    return dy.inputTensor(a, batched=True, device=moire.config.device)
 
 
 def full_like(x: Expression, value) -> Expression:
     dim, batch_size = x.dim()
-    return dy.constant(dim, value, batch_size=batch_size)
+    return full(*dim, value=value, batch_size=batch_size)
 
 
 def normal(*dim, mean: float = 0.0, stddev: float = 1.0, batch_size: int = 1) -> Expression:
-    return dy.random_normal(dim, mean=mean, stddev=stddev, batch_size=batch_size)
+    a = np.random.normal(loc=mean, scale=stddev, size=(*dim, batch_size)).astype(np.float32)
+    return dy.inputTensor(a, batched=True, device=moire.config.device)
 
 
 def normal_like(x: Expression, mean: float = 0.0, stddev: float = 1.0) -> Expression:
     dim, batch_size = x.dim()
-    return dy.random_normal(dim, mean=mean, stddev=stddev, batch_size=batch_size)
+    return normal(*dim, mean=mean, stddev=stddev, batch_size=batch_size)
 
 
-def bernoulli(*dim, p: float, scale: float = 1.0, batch_size: int = 1) -> Expression:
-    return dy.random_bernoulli(dim, p=p, scale=scale, batch_size=batch_size)
+def bernoulli(*dim, p: float, batch_size: int = 1) -> Expression:
+    a = np.random.uniform(low=0, high=1.0, size=(*dim, batch_size)) < p
+    return dy.inputTensor(a.astype(np.int32), batched=True, device=moire.config.device)
 
 
-def bernoulli_like(x: Expression, p: float, scale: float = 1.0) -> Expression:
+def bernoulli_like(x: Expression, p: float) -> Expression:
     dim, batch_size = x.dim()
-    return dy.random_bernoulli(dim, p=p, scale=scale, batch_size=batch_size)
+    return bernoulli(*dim, p=p, batch_size=batch_size)
 
 
 def uniform(*dim, low: float, high: float, batch_size: int = 1) -> Expression:
-    return dy.random_uniform(dim, left=low, right=high, batch_size=batch_size)
+    a = np.random.uniform(low=low, high=high, size=(*dim, batch_size))
+    return dy.inputTensor(a, batched=True, device=moire.config.device)
 
 
 def uniform_like(x: Expression, low: float, high: float) -> Expression:
     dim, batch_size = x.dim()
-    return dy.random_uniform(dim, left=low, right=high, batch_size=batch_size)
+    return uniform(dim, low=low, high=high, batch_size=batch_size)
 
 
 def gumbel(*dim, mu: float = 0.0, beta: float = 1.0, batch_size: int = 1) -> Expression:
-    return dy.random_gumbel(dim, mu=mu, beta=beta, batch_size=batch_size)
+    a = np.random.gumbel(loc=mu, scale=beta, size=(*dim, batch_size))
+    return dy.inputTensor(a, batched=True, device=moire.config.device)
 
 
 def gumbel_like(x: Expression, mu: float = 0.0, beta: float = 1.0) -> Expression:
     dim, batch_size = x.dim()
-    return dy.random_gumbel(dim, mu=mu, beta=beta, batch_size=batch_size)
+    return gumbel(*dim, mu=mu, beta=beta, batch_size=batch_size)
 
 
 def where(cond: Expression, x: Expression, y: Expression) -> Expression:
     return dy.cmult(cond, x) + dy.cmult(1.0 - cond, y)
-
-
-if __name__ == '__main__':
-    cond = dy.inputVector([1, 0, 0, 1])
-    x = dy.inputVector([1, 2, 3, 4])
-    y = dy.inputVector([6, 7, 8, 9])
-    print(where(cond, x, y).value())
