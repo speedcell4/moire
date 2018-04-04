@@ -39,6 +39,16 @@ class Initializer(object):
         raise NotImplementedError
 
 
+class NumpyInitializer(Initializer):
+    def __init__(self, array, dtype) -> None:
+        super().__init__(dtype)
+        self.array = array
+
+    def generate_array(self, shape):
+        assert self.array.shape == shape
+        return self.array
+
+
 class ChainerInitializer(Initializer):
     def __init__(self, initializer, dtype) -> None:
         super().__init__(dtype)

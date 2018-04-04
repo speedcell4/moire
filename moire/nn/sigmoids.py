@@ -4,6 +4,8 @@ import dynet as dy
 import numpy as np
 
 import moire
+
+from moire.nn import initializers
 from moire import ParameterCollection, nn, Expression, where
 from moire.array import full_like
 
@@ -29,6 +31,32 @@ def hard_sigmoid(x: Expression, slope: float = 0.2, offset: float = 0.5,
 
 
 softmax = dy.softmax
+
+
+class LogSoftmax(nn.Module):
+    def __init__(self, pc: ParameterCollection, nb_classes: int, restrict=None) -> None:
+        super(LogSoftmax, self).__init__(pc)
+
+        self.nb_classes = nb_classes
+        self.restrict = restrict
+
+        if restrict is not None:
+            array = np.full((nb_classes,), fill_value=-float('inf'), dtype=np.float32)
+            for ix in restrict:
+                array[ix] = np.float32(1.0)
+            self.mask = self.add_param((nb_classes,), initializers.NumpyInitializer(array, np.float32))
+
+    def __repr__(self) -> str:
+        if self.restrict is not None:
+            return f'<{self.__class__.__name__} @ {self.restrict}>'
+        else:
+            return f'<{self.__class__.__name__}>'
+
+    def __call__(self, x: Expression) -> Expression:
+        if self.restrict is not None:
+            # x = dy.cmult(x, dy.const_parameter(self.mask))
+            x = dy.cmult(x, self.mask.expr(moire.config.train))
+        return dy.log_softmax(x)
 
 
 def log_softmax(x: Expression, restrict=None) -> Expression:
@@ -70,3 +98,14 @@ class RestrictedLogSoftmax(MaskedLogSoftmax):
 
     def __repr__(self):
         return f'<{self.__class__.__name__} :: {self.restricts}>'
+
+
+if __name__ == '__main__':
+    miao = LogSoftmax(ParameterCollection(), 6, [2, 3, 4])
+
+    x = dy.inputVector([1, 2, 3, 4, 5, 6])
+    y = miao.__call__(x)
+    z = dy.log_softmax(x, [2, 3, 4])
+
+    print(f'y :: {y.dim()} => {y.value()}')
+    print(f'z :: {z.dim()} => {z.value()}')
