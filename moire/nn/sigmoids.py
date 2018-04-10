@@ -34,20 +34,8 @@ def softmax(x: Expression, axis: int = 1) -> Expression:
     return dy.softmax(x, d=axis)
 
 
-def softmax_mul(A: Expression, B: Expression, bias: Expression = None, scale: bool = True) -> Expression:
-    (A_d0, A_d1), _ = A.dim()
-    (B_d0, B_d1), _ = B.dim()
-    assert A_d1 == B_d0, f'{A.dim()} is not capable with {B.dim()} for multiplication'
-
-    if bias is not None:
-        Z = dy.affine_transform([bias, A, B])
-    else:
-        Z = A * B
-
-    if scale:
-        return softmax(Z / A_d1, axis=1)
-    else:
-        return softmax(Z, axis=1)
+def scaled_mul(x: Expression, y: Expression) -> Expression:
+    return x * y / x.dim()[0][-1]
 
 
 class LogSoftmax(nn.Module):
@@ -114,14 +102,3 @@ class RestrictedLogSoftmax(MaskedLogSoftmax):
 
     def __repr__(self):
         return f'<{self.__class__.__name__} :: {self.restricts}>'
-
-
-if __name__ == '__main__':
-    A = dy.inputTensor([[1, 2], [2, 3]])
-    B = dy.inputTensor([[1, 2], [2, 3]])
-
-    C = softmax_mul(A, B, None, True)
-    D = A * B
-
-    print(f'C :: {C.dim()} => {C.value()}')
-    print(f'D :: {D.dim()} => {D.value()}')

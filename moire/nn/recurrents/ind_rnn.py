@@ -5,6 +5,7 @@ import dynet as dy
 
 import moire as mo
 from moire import nn
+from moire.nn.thresholds import LeakyRelu
 from moire.nn.initializers import GlorotNormal, One, Uniform, Zero, calculate_gain
 from moire import Expression, ParameterCollection
 
@@ -13,7 +14,7 @@ from moire import Expression, ParameterCollection
 
 class IndRNNCell(nn.Module):
     def __init__(self, pc: ParameterCollection,
-                 input_size: int, hidden_size: int, activation=nn.LeakyRelu(0.2),
+                 input_size: int, hidden_size: int, activation=LeakyRelu(0.2),
                  W_initializer=None, u_initializer=One(), b_initializer=Zero(), h_initializer=Uniform()) -> None:
         super().__init__(pc)
 
@@ -58,7 +59,7 @@ class LSTMState(object):
 
 class IndRNN(nn.Module):
     def __init__(self, pc: ParameterCollection, num_layers: int,
-                 input_size: int, hidden_size: int, activation=nn.LeakyRelu(0.2),
+                 input_size: int, hidden_size: int, activation=LeakyRelu(0.2),
                  W_initializer=None, u_initializer=One(), b_initializer=Zero(), h_initializer=Uniform()) -> None:
         super().__init__(pc)
 
@@ -113,7 +114,7 @@ class IndRNN(nn.Module):
 class BiIndRNN(nn.Module):
     def __init__(self, pc: ParameterCollection, num_layers: int,
                  input_size: int, output_size: int, merge_strategy: str,
-                 activation=nn.LeakyRelu(0.2),
+                 activation=LeakyRelu(0.2),
                  W_initializer=None, u_initializer=One(), b_initializer=Zero(), h_initializer=Uniform()) -> None:
         super(BiIndRNN, self).__init__(pc)
         assert merge_strategy in ['cat', 'avg', 'sum', 'max']
