@@ -4,14 +4,14 @@ import dynet as dy
 import numpy as np
 
 import moire
-
 from moire.nn import initializers
-from moire import ParameterCollection, nn, Expression, where
+from moire import Expression, ParameterCollection, nn, where
 from moire.array import full_like
 
 __all__ = [
     'sigmoid', 'softsign', 'hard_sigmoid',
     'softmax', 'log_softmax',
+    'LogSoftmax',
     'MaskedLogSoftmax', 'RestrictedLogSoftmax',
 ]
 
@@ -30,7 +30,24 @@ def hard_sigmoid(x: Expression, slope: float = 0.2, offset: float = 0.5,
     return clip(x * slope + offset, a_min, a_max)
 
 
-softmax = dy.softmax
+def softmax(x: Expression, axis: int = 1) -> Expression:
+    return dy.softmax(x, d=axis)
+
+
+def softmax_mul(A: Expression, B: Expression, bias: Expression = None, scale: bool = True) -> Expression:
+    (A_d0, A_d1), _ = A.dim()
+    (B_d0, B_d1), _ = B.dim()
+    assert A_d1 == B_d0, f'{A.dim()} is not capable with {B.dim()} for multiplication'
+
+    if bias is not None:
+        Z = dy.affine_transform([bias, A, B])
+    else:
+        Z = A * B
+
+    if scale:
+        return softmax(Z / A_d1, axis=1)
+    else:
+        return softmax(Z, axis=1)
 
 
 class LogSoftmax(nn.Module):
@@ -54,7 +71,6 @@ class LogSoftmax(nn.Module):
 
     def __call__(self, x: Expression) -> Expression:
         if self.restrict is not None:
-            # x = dy.cmult(x, dy.const_parameter(self.mask))
             x = dy.cmult(x, self.mask.expr(moire.config.train))
         return dy.log_softmax(x)
 
@@ -101,11 +117,11 @@ class RestrictedLogSoftmax(MaskedLogSoftmax):
 
 
 if __name__ == '__main__':
-    miao = LogSoftmax(ParameterCollection(), 6, [2, 3, 4])
+    A = dy.inputTensor([[1, 2], [2, 3]])
+    B = dy.inputTensor([[1, 2], [2, 3]])
 
-    x = dy.inputVector([1, 2, 3, 4, 5, 6])
-    y = miao.__call__(x)
-    z = dy.log_softmax(x, [2, 3, 4])
+    C = softmax_mul(A, B, None, True)
+    D = A * B
 
-    print(f'y :: {y.dim()} => {y.value()}')
-    print(f'z :: {z.dim()} => {z.value()}')
+    print(f'C :: {C.dim()} => {C.value()}')
+    print(f'D :: {D.dim()} => {D.value()}')
