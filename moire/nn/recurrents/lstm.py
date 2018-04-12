@@ -5,7 +5,7 @@ import dynet as dy
 import moire
 from moire import Expression, ParameterCollection
 from moire import nn
-from moire.nn.initializers import GlorotNormal, Orthogonal, Uniform, Zero, One
+from moire.nn.initializers import ConcatenatedInitializer, GlorotNormal, One, Orthogonal, Uniform, Zero
 from moire.nn.sigmoids import sigmoid
 from moire.nn.trigonometry import tanh
 
@@ -25,6 +25,18 @@ class LSTM(nn.Module):
         self.dropout_ratio = dropout_ratio
         self.zoneout_ratio = zoneout_ratio
         self.rnn = dy.LSTMBuilder(num_layers, input_size, hidden_size, self.pc)
+
+        kernel_initializer = ConcatenatedInitializer(
+            kernel_initializer, kernel_initializer, kernel_initializer, kernel_initializer, axis=0)
+        recurrent_initializer = ConcatenatedInitializer(
+            recurrent_initializer, recurrent_initializer, recurrent_initializer, recurrent_initializer, axis=0)
+        bias_initializer = ConcatenatedInitializer(
+            bias_initializer, forget_bias_initializer, bias_initializer, bias_initializer, axis=0)
+
+        for W, U, b in self.rnn.get_parameters():
+            W.set_value(kernel_initializer.generate_array(W.shape()))
+            U.set_value(recurrent_initializer.generate_array(U.shape()))
+            b.set_value(bias_initializer.generate_array(b.shape()))
 
         self.x0 = self.add_param((input_size,), hidden_initializer)
 
