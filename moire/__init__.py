@@ -1,5 +1,6 @@
-from typing import Callable
+from typing import Callable, Dict, Union
 
+import numpy as np
 import dynet as dy
 
 Expression = dy.Expression
@@ -12,6 +13,7 @@ ParameterCollection = dy.ParameterCollection
 from .array import *
 
 import contextlib
+from collections import OrderedDict
 import sys
 from pathlib import Path
 from typing import Optional
@@ -42,6 +44,7 @@ config = Configuration(
     stderr=sys.stderr,
 
     chapter='train',
+    observation=OrderedDict(),
 )
 
 
@@ -72,3 +75,24 @@ def redirect_stream(name: str, path: Optional[Path], mode: str = 'r', encoding: 
                     yield
                 finally:
                     pass
+
+
+def report_scalar(name: str, value: Union[int, float], iteraiton: int = None) -> None:
+    global config
+    config.observation.setdefault(name, []).append((value, iteraiton))
+
+
+def summary_scalar(name: str) -> float:
+    global config
+    values, _ = zip(*config.observation.get(name, [0.0]))
+    mean = np.array(values, dtype=np.float32).mean()
+    del config.observation[name]
+    return mean
+
+
+def summary_all_scalars() -> Dict[str, float]:
+    global config
+    return {
+        name: summary_scalar(name)
+        for name in config.observation.keys()
+    }
