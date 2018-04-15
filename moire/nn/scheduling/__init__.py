@@ -155,6 +155,7 @@ class EpisodicSchedule(Schedule):
         self.done = False
 
         self.step = 0
+        self.interval_start_tm = datetime.now()
         self.obs = self.env.reset()
 
         for extension in self.episode_extensions[True]:
@@ -166,7 +167,6 @@ class EpisodicSchedule(Schedule):
 
     def _train_enter_iteration(self) -> None:
         self.iteration += 1
-        self.iteration += 1
 
         for extension in self.iteration_extensions[True]:
             extension.__call__(self)
@@ -174,6 +174,9 @@ class EpisodicSchedule(Schedule):
     def _train_finish_iteration(self) -> None:
         for extension in self.iteration_extensions[False]:
             extension.__call__(self)
+        print(
+            f'[{mo.config.chapter} iteration-{self.iteration}]'
+            f' elapsed: {datetime.now() - self.interval_start_tm}', file=mo.config.stdlog)
 
     def train(self, nb_episodes: int = None, max_steps: int = None):
         for _ in itertools.repeat(None, times=nb_episodes):
