@@ -33,7 +33,7 @@ def ones_like(x: Expression) -> Expression:
 
 
 def eye(N: int, M: int = None, k: int = 0) -> Expression:
-    return dy.inputTensor(np.eye(N, M, k))
+    return dy.inputTensor(np.eye(N, M, k), batched=False, device=moire.config.device)
 
 
 def diagonal(x: Expression) -> Expression:
