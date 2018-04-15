@@ -36,6 +36,12 @@ def launch_moire(devices: str = 'CPU', memory: int = 1500, random_seed: int = 33
     if weight_decay is not None:
         print(f'[dynet] weight decay: {weight_decay:f}', file=sys.stderr)
 
+    try:
+        import matplotlib
+        matplotlib.use('agg')
+    except ModuleNotFoundError:
+        warnings.warn(r'matplotlib not found')
+
     import dynet
     return dynet
 
