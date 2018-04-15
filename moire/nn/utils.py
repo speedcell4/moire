@@ -12,8 +12,13 @@ __all__ = [
 
 
 # check here
-def compute_hidden_size(in_size: int, out_size: int) -> int:
-    return int(np.maximum(in_size, out_size) + np.ceil(np.sqrt(in_size + out_size)))
+def compute_hidden_size(in_size: int, out_size: int, min_size: int = None, max_size: int = None) -> int:
+    vec_size = int(np.maximum(in_size, out_size) + np.ceil(np.sqrt(in_size + out_size)))
+    if min_size is not None:
+        vec_size = max(min_size, vec_size)
+    if max_size is not None:
+        vec_size = min(max_size, vec_size)
+    return vec_size
 
 
 def to_numpy(value: Union[Expression, bool, int, float, ndarray]) -> ndarray:

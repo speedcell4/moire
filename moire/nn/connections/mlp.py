@@ -1,6 +1,6 @@
 import dynet as dy
 
-from moire import ParameterCollection, Activation, Expression
+from moire import Activation, Expression, ParameterCollection
 from moire import nn
 from moire.nn.connections.linear import Linear
 from moire.nn.initializers import GlorotUniform, Zero, calculate_gain
@@ -16,7 +16,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__(pc)
 
         if hidden_feature is None:
-            hidden_feature = compute_hidden_size(in_feature, out_feature, )
+            hidden_feature = compute_hidden_size(in_feature, out_feature)
 
         self.num_layers = num_layers
         self.in_feature = in_feature
@@ -37,8 +37,8 @@ class MLP(nn.Module):
             layer = Linear(self.pc, hidden_feature, out_feature, output_weight_initializer, bias_initializer)
             setattr(self, f'layer{num_layers - 1}', layer)
 
-    def __repr__(self):
-        return f'{self.__class__.__name__} ({self.num_layers} @ {self.in_feature} -> ' \
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__} ({self.num_layers} layers :: {self.in_feature} -> ' \
                f'{self.hidden_feature} -> {self.out_feature})'
 
     def __call__(self, x: Expression) -> Expression:
@@ -54,4 +54,5 @@ if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
     y = fc(x)
 
+    print(fc)
     print(f'y :: {y.dim()} => {y.value()}')
