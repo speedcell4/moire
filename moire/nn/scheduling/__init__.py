@@ -180,8 +180,8 @@ class EpisodicSchedule(Schedule):
             self._train_enter_episode()
             while not self.done and (max_steps is None or self.step <= max_steps):
                 self._train_enter_iteration()
-                self.obs, self.reward, self.done, *self.info = \
-                    self.agent.act_and_train(self.obs, self.reward)
+                self.action = self.agent.act_and_train(self.obs, self.reward)
+                self.obs, self.reward, self.done, *self.info = self.env.step(self.action)
                 self._train_finish_iteration()
             self.agent.stop_episode_and_train(self.obs, self.reward, self.done)
             self._train_finish_episode()
