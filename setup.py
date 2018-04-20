@@ -11,6 +11,7 @@ setup(
         'moire.nn.convolutions',
         'moire.nn.recurrents',
         'moire.nn.reinforces',
+        'moire.nn.normalizations',
         'moire.nn.reinforces.agents',
         'moire.nn.sparses',
     ],
