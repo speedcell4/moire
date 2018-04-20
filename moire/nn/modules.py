@@ -1,12 +1,14 @@
 import itertools
 from collections import OrderedDict
 from pathlib import Path
+from typing import List
+import warnings
 
 import dynet as dy
 import numpy as np
 
 import moire
-from moire import ParameterCollection, Parameters, LookupParameters
+from moire import LookupParameters, ParameterCollection, Parameters
 
 
 class Function(object):
@@ -30,10 +32,13 @@ class Function(object):
 # TODO Builders
 # TODO save / load, pickle, copy, deepcopy
 class Module(object):
-    def __init__(self, pc: ParameterCollection):
+    def __init__(self, pc: ParameterCollection, sub_module: bool = True) -> None:
         super(Module, self).__init__()
 
-        self.pc: dy.Model = pc.add_subcollection()
+        if sub_module:
+            self.pc: dy.Model = pc.add_subcollection()
+        else:
+            self.pc: dy.Model = pc
 
         self._modules = OrderedDict()
         self._functions = OrderedDict()
@@ -123,3 +128,25 @@ class Module(object):
             parameter.set_value(next(values))
         for lookup_parameter in self.lookup_parameters:
             lookup_parameter.init_from_array(next(values))
+
+
+class ModuleList(Module):
+    def __init__(self, pc: ParameterCollection, modules: List[Module] = None) -> None:
+        super().__init__(pc, sub_module=False)
+        warnings.warn(f'{self.__class__.__name__} has not been tested', FutureWarning)
+        if modules is not None:
+            self.extend(modules)
+
+    def append(self, module: Module):
+        ix = self._modules.__len__()
+        return setattr(self, f'layer{ix}', module)
+
+    def extend(self, modules: List[Module]):
+        for module in modules:
+            self.append(module)
+
+    def __getitem__(self, ix: int) -> Module:
+        return self._modules[f'layer{ix}']
+
+    def __call__(self, *inputs):
+        raise NotImplementedError(f'{self.__class__.__name__} is not callable')
