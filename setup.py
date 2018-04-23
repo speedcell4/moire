@@ -17,6 +17,7 @@ setup(
         'moire.nn.scheduling',
         'moire.nn.sparses',
         'moire.nn.functions',
+        'moire.nn.utils',
     ],
     url='',
     license='MIT',
