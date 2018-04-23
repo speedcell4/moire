@@ -101,6 +101,14 @@ def summary_all_scalars() -> Dict[str, float]:
 logger = logbook.Logger(__name__, level=logbook.NOTICE)
 logbook.StreamHandler(stream=sys.stdout, level=logbook.NOTICE).push_application()
 
+CRITICAL = logbook.CRITICAL
+ERROR = logbook.ERROR
+WARNING = logbook.WARNING
+NOTICE = logbook.NOTICE
+INFO = logbook.INFO
+DEBUG = logbook.DEBUG
+TRACE = logbook.TRACE
+
 critical = logger.critical
 error = logger.error
 warning = logger.warning

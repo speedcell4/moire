@@ -6,8 +6,8 @@ import dynet as dy
 import moire
 from moire import Expression, ParameterCollection, nn
 from moire.nn.initializers import ConcatenatedInitializer, GlorotNormal, One, Orthogonal, Uniform, Zero
-from moire.nn.sigmoids import sigmoid
-from moire.nn.trigonometry import tanh
+from moire.nn.functions import sigmoid
+from moire.nn.functions import tanh
 
 
 class LSTMCell(nn.Module):

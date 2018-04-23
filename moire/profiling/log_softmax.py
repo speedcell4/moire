@@ -26,7 +26,7 @@ def generate_data():
 
 
 xs, restricts = generate_data()
-
+p
 
 def test_to_device():
     profile = cProfile.Profile()

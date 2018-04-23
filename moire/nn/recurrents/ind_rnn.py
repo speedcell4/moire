@@ -5,7 +5,7 @@ import dynet as dy
 
 import moire
 from moire import nn
-from moire.nn.thresholds import LeakyRelu
+from moire.nn.functions import LeakyRelu
 from moire.nn.initializers import GlorotNormal, One, Uniform, Zero, calculate_gain
 from moire import Expression, ParameterCollection
 

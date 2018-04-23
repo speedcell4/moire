@@ -4,7 +4,7 @@ import dynet as dy
 import numpy as np
 import chainer
 
-from moire.nn import sigmoid, linear, relu, tanh
+from moire.nn.functions import sigmoid, linear, relu, tanh
 
 # http://pytorch.org/docs/0.3.1/nn.html#torch.nn.init.calculate_gain
 activation_gains = {
