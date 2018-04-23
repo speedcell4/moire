@@ -13,6 +13,7 @@ setup(
         'moire.nn.normalizations',
         'moire.nn.recurrents',
         'moire.nn.reinforces',
+        'moire.nn.reinforces.agents',
         'moire.nn.scheduling',
         'moire.nn.sparses',
         'moire.nn.functions',
