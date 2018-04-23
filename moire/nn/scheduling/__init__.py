@@ -1,16 +1,24 @@
 from datetime import datetime
-import itertools
+from pathlib import Path
 
 import dynet as dy
 
-import moire as mo
 from moire import nn
 from moire.nn.reinforces.agents import Agent
 from moire import Expression
+from moire.utils import repeat
 
 
 class Schedule(object):
     iteration: int
+
+    def __init__(self, out_root: Path) -> None:
+        super(Schedule, self).__init__()
+        self.out_root = out_root
+
+    @property
+    def out_dir(self) -> Path:
+        raise NotImplementedError
 
     def register_extension(self, extension: 'Extension') -> None:
         raise NotImplementedError
@@ -18,11 +26,12 @@ class Schedule(object):
 
 class Extension(object):
     def __call__(self, schedule: 'Schedule') -> None:
-        print(f'{self.__class__.__name__} is called', file=mo.config.stdlog)
+        moire.info(f'{self.__class__.__name__} is called')
 
 
 class EpochalSchedule(Schedule):
-    def __init__(self, module: nn.Module, iterator, optimizer: dy.Trainer) -> None:
+    def __init__(self, module: nn.Module, iterator, optimizer: dy.Trainer, out_root: Path) -> None:
+        super().__init__(out_root)
         self.module = module
         self.train_iterator = iterator
         self.optimizer = optimizer
@@ -67,9 +76,9 @@ class EpochalSchedule(Schedule):
     def _train_finish_epoch(self) -> None:
         for extension in self.epoch_extensions[False]:
             extension.__call__(self)
-        print(
-            f'[{mo.config.chapter} epoch-{self.epoch}]'
-            f' elapsed: {datetime.now() - self.epoch_start_tm}', file=mo.config.stdlog)
+        moire.info(
+            f'[{moire.config.chapter} epoch-{self.epoch}]'
+            f' elapsed: {datetime.now() - self.epoch_start_tm}')
 
     def _train_enter_iteration(self) -> None:
         self.iteration += 1
@@ -86,7 +95,7 @@ class EpochalSchedule(Schedule):
         del self.loss
 
     def train(self, nb_epoch: int, chapter: str = 'train', train: bool = True, debug: bool = False):
-        with mo.using_config(chapter=chapter, train=train, debug=debug):
+        with moire.using_config(chapter=chapter, train=train, debug=debug):
             for _ in range(nb_epoch):
                 self._train_enter_epoch()
                 for batch in self.train_iterator:
@@ -112,10 +121,10 @@ class EpochalSchedule(Schedule):
 
 
 class EpisodicSchedule(Schedule):
-    def __init__(self, agent: Agent, env, optimizer: dy.Trainer) -> None:
+    def __init__(self, agent: Agent, env, out_root: Path) -> None:
+        super().__init__(out_root)
         self.agent = agent
         self.env = env
-        self.optimizer = optimizer
 
         self.step: int = 0
         self.episode: int = 0
@@ -174,18 +183,21 @@ class EpisodicSchedule(Schedule):
     def _train_finish_iteration(self) -> None:
         for extension in self.iteration_extensions[False]:
             extension.__call__(self)
-        print(
-            f'[{mo.config.chapter} iteration-{self.iteration}]'
-            f' elapsed: {datetime.now() - self.interval_start_tm}', file=mo.config.stdlog)
 
     def train(self, nb_episodes: int = None, max_steps: int = None):
-        for _ in itertools.repeat(None, times=nb_episodes):
+        for _ in repeat(None, times=nb_episodes):
             self._train_enter_episode()
-            while not self.done and (max_steps is None or self.step <= max_steps):
+            for _ in repeat(None, times=max_steps):
+                if self.done:
+                    break
                 self._train_enter_iteration()
                 self.action = self.agent.act_and_train(self.obs, self.reward)
                 self.obs, self.reward, self.done, *self.info = self.env.step(self.action)
                 self._train_finish_iteration()
+                print(self.action)
+                print(self.obs)
+                print(self.reward)
+                print(self.done)
             self.agent.stop_episode_and_train(self.obs, self.reward, self.done)
             self._train_finish_episode()
 
@@ -194,3 +206,5 @@ class EpisodicSchedule(Schedule):
 
 
 from .monitor import *
+from .epsilon import *
+from .history import *

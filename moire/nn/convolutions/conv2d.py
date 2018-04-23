@@ -86,11 +86,11 @@ if __name__ == '__main__':
 
     x = normal(7, 7, in_channels)
 
-    print(conv2d)
-    print(maxpool2d)
+    moire.debug(conv2d)
+    moire.debug(maxpool2d)
 
-    print(x.dim())
+    moire.debug(x.dim())
     y = conv2d(x)
-    print(y.dim())
+    moire.debug(y.dim())
 
-    print(maxpool2d(y).dim())
+    moire.debug(maxpool2d(y).dim())

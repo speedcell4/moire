@@ -97,7 +97,7 @@ def where(cond: Expression, x: Expression, y: Expression) -> Expression:
 
 if __name__ == '__main__':
     a = dy.inputTensor([[1, 2, 3], [2, 3, 4], ])
-    print(f'a :: {a.dim()} => {a.value()}')
+    moire.debug(f'a :: {a.dim()} => {a.value()}')
 
     b = diagonal(a)
-    print(f'b :: {b.dim()} => {b.value()}')
+    moire.debug(f'b :: {b.dim()} => {b.value()}')

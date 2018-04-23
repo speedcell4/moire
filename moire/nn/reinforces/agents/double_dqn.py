@@ -36,4 +36,5 @@ if __name__ == '__main__':
             dqn.act_and_train(dy.inputVector([1, 2, 3]), 0.8)
         dqn.stop_episode_and_train(dy.inputVector([1, 2, 3]), 0.7, True)
 
-        print(f'average_q => {dqn.average_q:.03f}, average_l => {dqn.average_loss:.03f}', file=moire.config.stdlog)
+        moire.debug(f'average_q => {dqn.average_q:.03f}, average_l => {dqn.average_loss:.03f}',
+                    file=moire.config.stdlog)

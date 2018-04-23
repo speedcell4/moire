@@ -29,4 +29,4 @@ if __name__ == '__main__':
     embedding = Embedding(ParameterCollection(), 100, 10)
     dy.renew_cg(True, True)
 
-    print(embedding(2).dim())
+    moire.debug(embedding(2).dim())

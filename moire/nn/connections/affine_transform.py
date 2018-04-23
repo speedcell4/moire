@@ -50,4 +50,4 @@ if __name__ == '__main__':
 
     y = affine_transform(x1, x2, x3)
 
-    print(f'y :: {y.dim()} => {y.value()}')
+    moire.debug(f'y :: {y.dim()} => {y.value()}')

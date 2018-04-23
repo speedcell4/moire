@@ -1,5 +1,6 @@
 import dynet as dy
 
+import moire
 from moire import Activation, Expression, ParameterCollection
 from moire import nn
 from moire.nn.connections.linear import Linear
@@ -54,5 +55,5 @@ if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
     y = fc(x)
 
-    print(fc)
-    print(f'y :: {y.dim()} => {y.value()}')
+    moire.debug(fc)
+    moire.debug(f'y :: {y.dim()} => {y.value()}')

@@ -1,7 +1,7 @@
 import dynet as dy
 
 import moire
-from moire import nn, Expression, ParameterCollection
+from moire import Expression, ParameterCollection, nn
 from moire.nn.initializers import Uniform
 
 __all__ = [
@@ -35,4 +35,4 @@ if __name__ == '__main__':
     embedding = ConjugateEmbedding(ParameterCollection(), 100, 2, 3)
     dy.renew_cg(True, True)
 
-    print(embedding(2).dim())
+    moire.debug(embedding(2).dim())

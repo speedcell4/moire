@@ -3,7 +3,7 @@ import itertools
 
 import dynet as dy
 
-import moire as mo
+import moire
 from moire import nn
 from moire.nn.thresholds import LeakyRelu
 from moire.nn.initializers import GlorotNormal, One, Uniform, Zero, calculate_gain
@@ -31,12 +31,12 @@ class IndRNNCell(nn.Module):
         self.h = self.add_param((hidden_size,), h_initializer)
 
     def __call__(self, x: Expression, htm1: Expression = None) -> Expression:
-        W = self.W.expr(mo.config.train)
-        u = self.u.expr(mo.config.train)
-        b = self.b.expr(mo.config.train)
+        W = self.W.expr(moire.config.train)
+        u = self.u.expr(moire.config.train)
+        b = self.b.expr(moire.config.train)
 
         if htm1 is None:
-            htm1 = self.h.expr(mo.config.train)
+            htm1 = self.h.expr(moire.config.train)
 
         return self.activation(W * x + dy.cmult(u, htm1) + b)
 
@@ -81,7 +81,7 @@ class IndRNN(nn.Module):
             setattr(self, f'rnn{ix}', IndRNNCell(self.pc, hidden_size, hidden_size, **_commons))
 
     def init_state(self) -> 'LSTMState':
-        hts = [getattr(self, f'rnn{ix}').h0.expr(mo.config.train)
+        hts = [getattr(self, f'rnn{ix}').h0.expr(moire.config.train)
                for ix in range(self.num_layers)]
         return LSTMState(hts, self.__call__)
 
@@ -180,6 +180,6 @@ if __name__ == '__main__':
         dy.inputVector([1, 2, 3, 4]),
     ]
     for y in rnn.transduce(xs):
-        print(f'y :: {y.dim()} => {y.value()}')
+        moire.debug(f'y :: {y.dim()} => {y.value()}')
     z = rnn.compress(xs)
-    print(f'z :: {z.dim()} => {z.value()}')
+    moire.debug(f'z :: {z.dim()} => {z.value()}')

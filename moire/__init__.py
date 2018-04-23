@@ -12,6 +12,7 @@ ParameterCollection = dy.ParameterCollection
 
 from .array import *
 
+import logbook
 import contextlib
 from collections import OrderedDict
 import sys
@@ -39,7 +40,6 @@ config = Configuration(
 
     device='CPU',
     stdin=sys.stdin,
-    stdlog=sys.stdout,
     stdout=sys.stdout,
     stderr=sys.stderr,
 
@@ -96,3 +96,15 @@ def summary_all_scalars() -> Dict[str, float]:
         name: summary_scalar(name)
         for name in config.observation.keys()
     }
+
+
+logger = logbook.Logger(__name__, level=logbook.NOTICE)
+logbook.StreamHandler(stream=sys.stdout, level=logbook.NOTICE).push_application()
+
+critical = logger.critical
+error = logger.error
+warning = logger.warning
+notice = logger.notice
+info = logger.info
+debug = logger.debug
+trace = logger.trace

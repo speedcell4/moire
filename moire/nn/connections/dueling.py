@@ -2,6 +2,7 @@ import functools
 
 import dynet as dy
 
+import moire
 from moire import Expression, ParameterCollection
 from moire import nn
 
@@ -36,4 +37,4 @@ if __name__ == '__main__':
     dy.renew_cg()
 
     x = dy.inputVector([1, 2, 3, 4])
-    print(fc(x).value())
+    moire.debug(fc(x).value())

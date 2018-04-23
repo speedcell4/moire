@@ -1,2 +1,2 @@
-from .agents import DoubleDQN, DQN
+from .agents import *
 from .replay_buffer import *

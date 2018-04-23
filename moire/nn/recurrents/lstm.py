@@ -126,10 +126,10 @@ if __name__ == '__main__':
     ]
 
     y = rnn.compress(xs)
-    print(f'y :: {y.dim()} => {y.value()}')
+    moire.debug(f'y :: {y.dim()} => {y.value()}')
 
     for z in rnn.transduce(xs):
-        print(f'z :: {z.dim()} => {z.value()}')
+        moire.debug(f'z :: {z.dim()} => {z.value()}')
 
     w = rnn.compress([])
-    print(f'w :: {w.dim()} => {w.value()}')
+    moire.debug(f'w :: {w.dim()} => {w.value()}')

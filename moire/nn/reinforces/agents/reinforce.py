@@ -4,7 +4,7 @@ import dynet as dy
 import numpy as np
 
 from moire import nn
-from moire.nn.indexing import gumbel_argmax, argmax
+from moire.nn.indexing import argmax, gumbel_argmax
 from moire.nn.informatics import entropy
 from .agent import Agent
 
@@ -106,7 +106,7 @@ class REINFORCE(Agent):
         # When self.batch_size is future.types.newint.newint, dividing a
         # Variable with it will raise an error, so it is manually converted to
         # float here.
-        if len(losses)>0:
+        if len(losses) > 0:
             dy.average(losses).backward()
             self.n_backward += 1
         self.reward_sequences = [[]]

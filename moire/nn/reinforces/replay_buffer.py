@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 import dynet as dy
-from chainerrl.replay_buffer import ReplayBuffer, PrioritizedReplayBuffer
+from chainerrl.replay_buffer import PrioritizedReplayBuffer, ReplayBuffer
 
 __all__ = [
     'batch_experiences',

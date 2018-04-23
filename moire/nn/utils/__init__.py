@@ -3,6 +3,7 @@ from typing import Union
 import numpy as np
 from numpy.core.multiarray import ndarray
 
+import moire
 from moire import Expression
 
 __all__ = [
@@ -30,4 +31,4 @@ def to_numpy(value: Union[Expression, bool, int, float, ndarray]) -> ndarray:
 
 
 if __name__ == '__main__':
-    print(compute_hidden_size(4, 3))
+    moire.debug(compute_hidden_size(4, 3))

@@ -14,7 +14,7 @@ class Linear(nn.Module):
         self.out_feature = out_feature
         self.use_bias = use_bias
 
-        self.W = self.add_param((out_feature, in_feature), weight_initializer)
+        self.W = self.add_param((in_feature, out_feature), weight_initializer)
         if not use_bias:
             bias_initializer = Zero()
         self.b = self.add_param((out_feature,), bias_initializer)
@@ -25,7 +25,7 @@ class Linear(nn.Module):
     def __call__(self, x: Expression) -> Expression:
         W = self.W.expr(moire.config.train)
         b = self.b.expr(self.use_bias and moire.config.train)
-        return dy.affine_transform([b, W, x])
+        return x * W + b
 
 
 if __name__ == '__main__':
@@ -35,4 +35,4 @@ if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
     y = fc(x)
 
-    print(f'y :: {y.dim()} => {y.value()}')
+    moire.debug(f'y :: {y.dim()} => {y.value()}')

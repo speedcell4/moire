@@ -165,3 +165,12 @@ class HeUniform(ChainerInitializer):
 class HeNormal(ChainerInitializer):
     def __init__(self, gain: float = 1.0, dtype=np.float32) -> None:
         super().__init__(chainer.initializers.HeNormal(scale=gain, dtype=dtype), dtype)
+
+
+class Positional(Initializer):
+    def __init__(self, dtype):
+        super().__init__(dtype)
+
+    def generate_array(self, shape):
+        (max_len, model_size) = shape
+        p_e = np.arange(model_size) // 2 * 2 / model_size

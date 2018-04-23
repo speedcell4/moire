@@ -1,4 +1,5 @@
 import dynet as dy
+import numpy as np
 
 import moire
 from moire import Expression
@@ -42,7 +43,7 @@ class DQN(Agent):
 
     def sync_target_network(self):
         self.target_q_function.copy_from(self.q_function)
-        print(f'{self.__class__.__name__} synchronized at iteration :: {self.t}', file=moire.config.stdlog)
+        moire.info(f'{self.__class__.__name__} synchronized at iteration :: {self.t}')
 
     def update(self, experiences):
         exp_batch = batch_experiences(experiences)
@@ -80,7 +81,10 @@ class DQN(Agent):
         return reward + gamma * (1.0 - done) * next_q
 
     def act(self, obs):
-        obs = dy.nobackprop(obs)
+        if isinstance(obs, Expression):
+            obs = dy.nobackprop(obs)
+        else:
+            obs = dy.inputVector(obs)
         action_value = self.q_function(obs)
         action = argmax(action_value)
         q = float(dy.pick(action_value, action).value())
@@ -92,9 +96,12 @@ class DQN(Agent):
 
     def act_and_train(self, obs, reward):
         if moire.config.debug:
-            print(f'act_and_train :: {obs} => {reward}')
+            moire.info(f'act_and_train :: {obs} => {reward}')
 
-        obs = dy.nobackprop(obs)
+        if isinstance(obs, Expression):
+            obs = dy.nobackprop(obs)
+        else:
+            obs = dy.inputVector(obs)
         action_value = self.q_function(obs)
         action = epsilon_argmax(action_value, moire.config.epsilon)
         q = float(dy.pick(action_value, action).value())
@@ -129,14 +136,19 @@ class DQN(Agent):
         assert self.last_obs is not None
         assert self.last_action is not None
 
+        if isinstance(obs, Expression):
+            obs = obs.npvalue()
+        else:
+            obs = np.array(obs)
+
         if moire.config.debug:
-            print(f'stop_episode_and_train :: {obs} => {reward}, {done}')
+            moire.info(f'stop_episode_and_train :: {obs} => {reward}, {done}')
 
         self.replay_buffer.append(
             state=self.last_obs,
             action=self.last_action,
             reward=float(reward),
-            next_state=obs.npvalue(),
+            next_state=obs,
             next_action=self.last_action,
             is_state_terminal=float(done),
         )
@@ -165,4 +177,5 @@ if __name__ == '__main__':
             dqn.act_and_train(dy.inputVector([1, 2, 3]), 0.8)
         dqn.stop_episode_and_train(dy.inputVector([1, 2, 3]), 0.7, True)
 
-        print(f'average_q => {dqn.average_q:.03f}, average_l => {dqn.average_loss:.03f}', file=moire.config.stdlog)
+        moire.debug(f'average_q => {dqn.average_q:.03f}, average_l => {dqn.average_loss:.03f}',
+                    file=moire.config.stdlog)

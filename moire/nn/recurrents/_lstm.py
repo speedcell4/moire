@@ -233,5 +233,5 @@ if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
     h, c = cell.__call__(x)
 
-    print(f'h :: {h.dim()} => {h.value()}')
-    print(f'c :: {c.dim()} => {c.value()}')
+    moire.debug(f'h :: {h.dim()} => {h.value()}')
+    moire.debug(f'c :: {c.dim()} => {c.value()}')
