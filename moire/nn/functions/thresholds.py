@@ -1,6 +1,7 @@
 import dynet as dy
 import numpy as np
 
+import moire
 from moire import Expression
 from moire.nn.modules import Function
 
@@ -28,5 +29,5 @@ class LeakyRelu(Function):
 if __name__ == '__main__':
     leaky_relu = LeakyRelu()
     x = dy.inputVector([-2, -1, 0, 1, 2])
-    print(leaky_relu(x).value())
-    print(leaky_relu.gain)
+    moire.debug(leaky_relu(x).value())
+    moire.debug(leaky_relu.gain)

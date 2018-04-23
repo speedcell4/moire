@@ -1,5 +1,6 @@
 import dynet as dy
 
+import moire
 from moire import Expression
 
 
@@ -9,4 +10,4 @@ def entropy(p: Expression) -> Expression:
 
 if __name__ == '__main__':
     p = dy.softmax(dy.inputVector([1, 2, 3, 4]))
-    print(entropy(p).value())
+    moire.debug(entropy(p).value())

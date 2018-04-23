@@ -41,4 +41,4 @@ if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3])
     h = dy.inputVector([7, 8, 9])
 
-    print(zoneout(x, h).value())
+    moire.debug(zoneout(x, h).value())

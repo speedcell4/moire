@@ -1,6 +1,7 @@
 import dynet as dy
 import numpy as np
 
+import moire
 from moire import Expression
 
 __all__ = [
@@ -48,4 +49,5 @@ if __name__ == '__main__':
     x = dy.inputVector([1, 2, 3, 4])
     prob = dy.softmax(x)
     a = np.array([gumbel_argmax(prob) for _ in range(1000)])
-    print(np.histogram(a, bins=4))
+
+    moire.debug(np.histogram(a, bins=4))
